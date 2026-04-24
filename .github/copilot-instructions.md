@@ -26,7 +26,7 @@ Monorepo with 6 components sharing a single crypto library:
 
 ### Encryption Model
 
-```
+```text
 Master Password → Argon2id → Master Unlock Key (MUK)
   → MUK wraps per-vault Vault Keys (AES-256-GCM)
     → Each Vault Key encrypts all items within that vault

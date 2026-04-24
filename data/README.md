@@ -15,6 +15,7 @@ ETL pipeline for building the local drug reference index.
 ## Output
 
 SQLite database bundled with the app containing:
+
 - Drug names, NDC codes, RxNorm CUIs
 - Common supplement names
 - Basic interaction data

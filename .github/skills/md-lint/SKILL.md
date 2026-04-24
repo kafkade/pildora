@@ -118,3 +118,4 @@ When you find violations:
 - Long lines (MD013 is off) — do not wrap or warn about long lines
 - Inline HTML (MD033 is off) — `<details>`, `<summary>`, GitHub `> [!NOTE]` alerts are all fine
 - First line not being a heading (MD041 is off) — files can start with anything
+- Table pipe spacing style (MD060 is off) — compact pipe style `|---|---|` is acceptable

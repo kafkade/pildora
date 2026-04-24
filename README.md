@@ -26,7 +26,7 @@ Pildora is a multi-platform medication and supplement tracker with zero-knowledg
 
 ## Architecture
 
-```
+```text
 Master Password
   → Argon2id → Master Unlock Key
     → Wraps per-vault Vault Keys (AES-256-GCM)
@@ -41,6 +41,7 @@ Master Password
 ## Features
 
 ### Core
+
 - Medication & supplement tracking (prescriptions, OTC, vitamins, supplements)
 - Flexible scheduling & local notifications
 - Drug interaction checking (on-device)
@@ -49,11 +50,13 @@ Master Password
 - Full data export at any time
 
 ### Multi-Profile Vaults
+
 - Personal, dependent (family), and pet medication tracking
 - Encrypted vault sharing with role-based access (owner / editor / viewer)
 - Vaccination tracker
 
 ### Moonshots
+
 - Health signal correlation (Apple Health integration, on-device analysis)
 - Performance signal tracking
 
@@ -67,7 +70,7 @@ Master Password
 
 ### Monorepo Structure (Planned)
 
-```
+```text
 pildora/
 ├── crypto/          # Shared Rust encryption library (pildora-crypto)
 ├── ios/             # iPhone + iPad + Watch app (SwiftUI)
@@ -92,6 +95,7 @@ pildora/
 This project is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0).
 
 This means:
+
 - ✅ You can use, modify, and distribute this software freely
 - ✅ You can run it for personal or commercial purposes
 - ⚠️ If you modify and distribute it (or run a modified version as a network service), you must release your modifications under AGPL-3.0
