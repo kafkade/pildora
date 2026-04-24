@@ -4,7 +4,7 @@ Command-line interface for Pildora, built with Rust.
 
 ## Planned Commands
 
-```
+```shell
 pildora add "Magnesium Glycinate" --dose 400mg --form capsule --times 21:00
 pildora list [--vault personal]
 pildora dose take --med "Magnesium Glycinate"

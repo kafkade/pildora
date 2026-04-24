@@ -147,14 +147,14 @@ All subsequent sections use these defaults. Where a default proves wrong, the **
 
 **Key hierarchy:**
 
-`
+```text
 Master Password
     -> [Argon2id + salt] -> Master Key (MK)
         -> [HKDF] -> Authentication Key (for SRP)
         -> [HKDF] -> Master Encryption Key (MEK)
             -> wraps -> Vault Key (VK) per vault [AES-256-GCM keywrap]
                 -> wraps -> Item Key (IK) per item [AES-256-GCM keywrap]
-`
+```
 
 Each vault has its own symmetric key (VK). Each item (medication, dose log, vaccination) has its own item key (IK) wrapped by the VK. This enables granular sharing — share a vault by sharing its VK, encrypted to the recipient's public key.
 
@@ -213,7 +213,7 @@ Implement a **time-delayed emergency access** model (similar to Bitwarden):
 4. If not denied, the vault key is released to the emergency contact (encrypted to their public key)
 5. This is opt-in and configured per vault
 
-**Temporary access (doctor visit) — Recommended approach: On-device PDF export ("Doctor Mode")**
+### Temporary access (doctor visit) — On-device PDF export
 
 - **Recommendation:** Generate a formatted PDF/printable medication list on-device. No server involvement, no sharing protocol complexity, works offline, doctor doesn't need to install anything.
 - Rejected alternatives:
@@ -392,7 +392,7 @@ This is the **only architecture that maintains full zero-knowledge guarantees** 
 | watchOS haptic alerts | None (on-device) | High | Yes | Free | Yes | **Secondary channel — companion to iOS** |
 | Push via APNs (opaque timers) | Timing pattern visible to Apple | Medium | Partial | Free | No | Defer to Phase 2+ only if local notification limits are hit; use opaque periodic heartbeat, not per-dose pushes |
 | Email reminders | Email + timing + content visible | Low | No | Low | No | **Do not implement.** Breaks zero-knowledge entirely. |
-| SMS reminders | Phone + timing + content visible | Low | No | ___BEGIN___COMMAND_DONE_MARKER___$LASTEXITCODE$ | No | **Do not implement.** Breaks zero-knowledge and is expensive. |
+| SMS reminders | Phone + timing + content visible | Low | No | $$$+ | No | **Do not implement.** Breaks zero-knowledge and is expensive. |
 | CLI system notifications | None (local) | Medium | Yes | Free | Later | Phase 4 with CLI tool |
 
 **Scheduling capabilities (Phase 1):** Daily, multiple times/day, every N days, specific days of week, as-needed (PRN with logging only, no auto-schedule), cycling schedules (e.g., "5 on / 2 off").
@@ -410,8 +410,8 @@ This is the **only architecture that maintains full zero-knowledge guarantees** 
 | openFDA / DailyMed | Public | Free (public domain) | US prescription drugs, OTC | Mature REST API | Yes | [Validated] |
 | RxNorm (NLM) | Public | Free (UMLS license, no cost) | US drug naming normalization | Mature REST API | Yes | [Validated] |
 | NIH ODS (Office of Dietary Supplements) | Public | Free | US supplements — limited to ~100 fact sheets | No structured API | Partial | [Validation Required] — may need scraping/manual curation |
-| Natural Medicines Database (TRC) | Licensed | ___BEGIN___COMMAND_DONE_MARKER___$LASTEXITCODE$+ (institutional pricing) | Comprehensive supplement interactions | Unknown API availability | No (MVP) | [Validation Required] — licensing inquiry needed |
-| DrugBank | Licensed | ,500+/yr (academic), more for commercial | Drug interactions, comprehensive | Good REST API | No (MVP) | [Validation Required] — licensing inquiry needed |
+| Natural Medicines Database (TRC) | Licensed | $$$+ (institutional pricing) | Comprehensive supplement interactions | Unknown API availability | No (MVP) | [Validation Required] — licensing inquiry needed |
+| DrugBank | Licensed | $2,500+/yr (academic), more for commercial | Drug interactions, comprehensive | Good REST API | No (MVP) | [Validation Required] — licensing inquiry needed |
 | State IIS (immunization registries) | Varies by state | Free (government) | Vaccination records | [Validation Required] | No | State-by-state API research needed |
 | Pharmacy FHIR (CVS, Walgreens) | [Validation Required] | Free? | Medication fill history | [Validation Required] | No | Partnership/API access inquiry needed |
 
@@ -664,7 +664,7 @@ This is the **only architecture that maintains full zero-knowledge guarantees** 
 
 ### Entity-Relationship Diagram (Text)
 
-`
+```text
 User (1) ---- (N) VaultMember (N) ---- (1) Vault
                                             |
                         +-------------------+-------------------+
@@ -680,7 +680,7 @@ User (1) ---- (N) VaultMember (N) ---- (1) Vault
 --- Reference Data (Plaintext, Shared) ---
 
 DrugReference (1) ---- (N) InteractionRule
-`
+```
 
 ### Entity Details
 
@@ -702,7 +702,7 @@ DrugReference (1) ---- (N) InteractionRule
 
 **Server-side storage model:** Encrypted entities are stored as opaque blobs. The server schema is:
 
-`sql
+```sql
 -- Server only sees this
 CREATE TABLE encrypted_items (
     id TEXT PRIMARY KEY,
@@ -712,7 +712,7 @@ CREATE TABLE encrypted_items (
     version INTEGER NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
-`
+```
 
 The server cannot query, filter, or index any encrypted content. All querying happens on-device after decryption.
 
@@ -818,7 +818,7 @@ medtrack status              # Encryption status, sync status, vault info
 
 **2x2 Positioning Matrix:**
 
-`
+```text
                     High Feature Richness
                           |
          Medisafe *       |       * THIS PROJECT (goal)
@@ -828,7 +828,7 @@ medtrack status              # Encryption status, sync status, vault info
          MyTherapy *      |       * Apple Health (native)
                           |
                     Low Feature Richness
-`
+```
 
 **Core differentiators:**
 
