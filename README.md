@@ -1,5 +1,8 @@
 # Pildora
 
+> [!IMPORTANT]
+> **This project is in the early planning stage.** There is no working software yet — only documentation, architecture decisions, and a product roadmap. If you're interested in following along or contributing, star the repo and watch for updates.
+
 **Your health data is yours. We can't see it even if we wanted to.**
 
 Pildora is a multi-platform medication and supplement tracker with zero-knowledge, end-to-end encryption. Your medications, schedules, and health data are encrypted on your device before they ever leave it. Our servers store only encrypted data that we cannot read.
