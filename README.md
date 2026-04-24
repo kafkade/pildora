@@ -64,6 +64,7 @@ Master Password
 
 - [`docs/roadmap.md`](docs/roadmap.md) — Full product roadmap (assumptions, architecture, features, phased milestones, competitive analysis, monetization)
 - [`docs/decisions.md`](docs/decisions.md) — Decision log with rationale for key project choices
+- [`docs/adr/`](docs/adr/) — Architecture Decision Records (encryption, platform, notifications, sync, licensing)
 
 ## Development
 
