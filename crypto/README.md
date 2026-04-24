@@ -21,4 +21,4 @@ This Rust library implements the core cryptographic operations used across all P
 
 ## Status
 
-🚧 Not yet implemented. Architecture decisions are documented in the [roadmap](../docs/roadmap.md) (Section 14.4 — ADRs).
+🚧 Not yet implemented. See [ADR-001](../docs/adr/001-encryption-architecture.md) for architecture decisions.
