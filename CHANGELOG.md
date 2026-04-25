@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `rustfmt.toml` and `clippy.toml` with project-wide conventions (edition 2024, `unsafe` denied, pedantic warnings)
 - Apple Developer enrollment guide (`docs/apple-developer-setup.md`)
 - ADR-006: Tech stack consolidation — Rust for crypto, CLI, and server; Swift for iOS; TypeScript for web; Python for ETL
+- Core cryptographic primitives: Argon2id key derivation, HKDF-SHA-256, AES-256-GCM encrypt/decrypt, AES-256-GCM key wrapping, X25519 key exchange, BLAKE2b hashing
+- Full key hierarchy: master key derivation from password, sub-key derivation (auth key + master encryption key), vault key and item key generation, wrapping, and unwrapping
+- Vault re-keying to re-wrap all item keys under a new vault key
+- Recovery key generation with human-readable Crockford Base32 encoding and checksum
+- Item-level encryption with per-item random keys wrapped by the vault key
+- Encrypted blob format (v1) with version byte for future migration support
+- Blob size padding to fixed buckets (512 B, 2 KiB, 8 KiB, 32 KiB) to prevent size-based inference
+- Generic typed encryption helpers (`encrypt_json`/`decrypt_json`) for any serializable domain object
+- AAD domain separation tags for all key wrapping and item encryption operations
 
 ### Changed
 
