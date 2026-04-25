@@ -2,6 +2,48 @@
 
 Key project decisions with rationale. Newest first.
 
+## 2026-04-25 — Tech Stack Consolidation
+
+**Decision:** Consolidate from 5 languages to 3 primary + Python for ETL.
+Maximize Rust. Eliminate Go entirely.
+
+**Stack:**
+
+- **Rust** — crypto library, CLI (clap), sync server (Axum)
+- **Swift** — iOS/iPad/Watch (non-negotiable)
+- **TypeScript** — web app (Next.js, crypto via Rust WASM)
+- **Python** — drug data ETL pipeline (batch processing)
+
+**Rationale:** Solo developer cannot sustain 5 languages. Rust covers 3
+components + the shared crypto core. Go was the only reason Go existed in the
+stack. Rust WASM for the full web UI was evaluated (Leptos, Yew, Dioxus) and
+rejected due to SSR immaturity and browser API friction.
+
+See [ADR-006](adr/006-tech-stack-consolidation.md) for full analysis.
+
+## 2026-04-25 — Crypto Implementation: RustCrypto over libsodium
+
+**Decision:** Use `RustCrypto` crates (pure Rust) for all cryptographic
+primitives instead of libsodium C bindings.
+
+**Rationale:** Pure Rust means no C dependencies, which ensures clean
+compilation to native, WASM, and iOS FFI targets without linkage issues. The
+`sodiumoxide` crate (Rust libsodium bindings) is also less actively
+maintained. RustCrypto crates (`aes-gcm`, `argon2`, `x25519-dalek`, `hkdf`,
+`sha2`, `blake2`) are well-audited and actively maintained.
+
+Updated in [ADR-001](adr/001-encryption-architecture.md).
+
+## 2026-04-25 — CLI Moved to Phase 0
+
+**Decision:** Pull the CLI tool from Phase 4 into Phase 0.
+
+**Rationale:** The CLI is Rust and shares the crypto crate directly — it is
+the fastest way to validate the encryption library in a real application.
+Building the CLI first validates the crypto layer without iOS/FFI complexity,
+gives a working product faster, and serves as a dev/debug tool during iOS
+development.
+
 ## 2026-04-24 — Markdown Linting Configuration
 
 **Decision:** Disable MD060 (table pipe spacing) in markdownlint config.

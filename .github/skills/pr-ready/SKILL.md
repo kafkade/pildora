@@ -45,7 +45,7 @@ Prepare a branch for pull request: generate a PR description from the diff AND u
    - `crypto/` or `cli/` (Rust): `cargo fmt -- --check && cargo clippy -- -D warnings && cargo test`
    - `ios/` (Swift): `swiftlint` and `xcodebuild test` if configured
    - `web/` (TypeScript): `npm run lint && npm test` if configured
-   - `server/` (Go): `go vet ./... && go test ./...` if configured
+   - `server/` (Rust): `cargo fmt -- --check && cargo clippy -- -D warnings && cargo test` (part of workspace)
    - `data/` (Python): `ruff check` and `pytest` if configured
    - Documentation-only: no code checks needed
    - Note which checks pass/fail to fill in the checklist accurately.

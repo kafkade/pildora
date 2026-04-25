@@ -602,40 +602,43 @@ This is the **only architecture that maintains full zero-knowledge guarantees** 
 
 ## SECTION 8: TECH STACK RECOMMENDATIONS
 
+> **Note:** This section's original recommendations have been superseded by
+> [ADR-006: Tech Stack Consolidation](adr/006-tech-stack-consolidation.md),
+> which consolidates the stack to 3 primary languages (Rust, Swift, TypeScript)
+> plus Python for ETL. The table below reflects the updated decisions.
+
 | Component | Recommendation | Justification |
 |---|---|---|
-| **CLI Tool** | **TypeScript + Commander.js**, distributed via npm | Shares language with web app; Commander.js is mature and well-documented; npm distribution is frictionless; can be promoted to brew later |
-| **Website / Web App** | **Next.js 15 (App Router) + React**, hosted on Vercel | SSR for marketing pages, SPA for dashboard; Vercel offers free tier and excellent DX; React ecosystem is the largest for web crypto libraries |
-| **iOS App** | **Native Swift/SwiftUI**, minimum iOS 17 | SwiftUI is mature for health apps; native provides best HealthKit, Keychain, Notification, and Watch integration; iOS 17 drops old devices but enables modern APIs (StoreKit 2, interactive widgets) |
-| **iPad App** | **Shared Swift codebase with iOS**, leveraging NavigationSplitView | SwiftUI adapts to iPad with multi-column layouts; no separate codebase needed |
+| **Crypto Library** | **Rust** (`pildora-crypto`), compiled to native (FFI) + WASM | Single implementation = single audit target. Shared by CLI, server (as crate), iOS (via FFI), and web (via WASM). See ADR-001. |
+| **CLI Tool** | **Rust + clap**, shares `pildora-crypto` crate directly | Same language as crypto — no FFI bridge needed. clap for CLI parsing, ratatui for optional TUI. Distributed via GitHub Releases and cargo install. |
+| **Backend API / Sync Server** | **Rust + Axum**, deployed as a single static binary | Replaces the original Go recommendation. Shares crypto crate directly for SRP-6a auth. Thin server — stores/retrieves encrypted blobs only. Deploy on Fly.io, Railway, Docker, or bare metal. |
+| **iOS / iPad App** | **Native Swift/SwiftUI**, minimum iOS 17 | Non-negotiable for HealthKit, Keychain, Secure Enclave, Watch, and local notifications. pildora-crypto bridged via FFI (UniFFI or cbindgen). |
 | **watchOS App** | **Companion app (shared Swift package)**, watchOS 10+ | Share data model and crypto layer via Swift Package; complications for next dose; haptic dose confirmation |
-| **Backend API** | **TypeScript + Hono**, deployed on Cloudflare Workers (Phase 2+) | Hono is lightweight, edge-native, and fast; Cloudflare Workers provide global low-latency with pay-per-request pricing; D1 (SQLite) for encrypted blob storage; R2 for encrypted blob objects |
-| **Database** | **SQLCipher (on-device)** for encrypted local storage; **Cloudflare D1** (server-side) for encrypted blob metadata; **R2** for large encrypted blobs | SQLCipher provides transparent AES-256 encryption for SQLite; D1/R2 store only encrypted data the server cannot read |
+| **Website / Web App** | **Next.js (App Router) + React + TypeScript**, pildora-crypto via WASM | SSR for marketing/SEO pages, SPA for dashboard. Crypto operations run in Rust WASM — no JS crypto reimplementation. Rust WASM UI frameworks (Leptos, Yew) were evaluated and rejected for maturity reasons (see ADR-006). |
+| **Database** | **SQLite (on-device)** for encrypted blob storage; **PostgreSQL or SQLite** (server-side) for encrypted blob metadata | On-device: plain SQLite storing pre-encrypted blobs (CLI) or SQLCipher (iOS). Server: Axum + SQLx with PostgreSQL or SQLite. |
 | **Auth & Key Exchange** | **SRP-6a** for zero-knowledge auth; **Argon2id** for key derivation; **X25519** for public-key key exchange | SRP prevents server from ever seeing the password; Argon2id is the current best-practice memory-hard KDF; X25519 for efficient vault sharing key wrapping |
-| **E2E Encryption Layer** | **libsodium** (via Swift swift-sodium, JS libsodium.js/sodium-native, WASM for web) | Battle-tested, audited, cross-platform; identical primitives on all platforms; AES-256-GCM for symmetric encryption, X25519 for key exchange, Argon2id for KDF |
-| **Drug Data Pipeline** | **Python ETL scripts** into SQLite index, bundled with app releases | Python for one-time data processing (openFDA bulk download, RxNorm normalization); output is a compressed SQLite file shipped as an app asset |
+| **E2E Encryption Layer** | **Single Rust library** (`pildora-crypto`) using RustCrypto crates or ring | One implementation across all platforms. Swift access via FFI, web access via WASM. Eliminates the multi-library divergence risk of per-platform libsodium bindings. |
+| **Drug Data Pipeline** | **Python ETL scripts** into SQLite index, bundled with app releases | Python for batch data processing (openFDA bulk download, RxNorm normalization); output is a compressed SQLite file shipped as an app asset |
 | **Notifications** | **iOS UNUserNotificationCenter (local)** + watchOS mirroring | Local notifications are E2E compatible and highly reliable; no server involvement |
-| **CI/CD** | **GitHub Actions** | Free for public repos, affordable for private; matrix builds for iOS/Watch (Xcode on macOS runners), web (Node), CLI (Node); Fastlane for iOS builds and TestFlight distribution |
+| **CI/CD** | **GitHub Actions** | Matrix builds for Rust (Linux, macOS, Windows), iOS/Watch (Xcode on macOS runners), web (Node), data pipeline (Python). Fastlane for iOS builds and TestFlight distribution. |
 | **Monitoring** | **Sentry (self-hosted or cloud with PII scrubbing)** for crash reporting; **no analytics SDK** | Sentry can be configured to strip PII; no third-party analytics (Mixpanel, Amplitude, etc.) — those require user data the project refuses to collect |
 
-**Cross-platform crypto parity:** Use **libsodium** as the single crypto primitive library across all platforms. Swift bindings (swift-sodium), JavaScript bindings (libsodium.js for web, sodium-native for CLI/backend), and WASM compilation ensure identical behavior. **Recommendation against a shared Rust/WASM library** — while theoretically cleaner, the build complexity for a solo developer (Rust to Swift FFI + WASM + Node native addon) is not justified. Libsodium already provides the parity needed.
+**Cross-platform crypto parity:** Use a **single shared Rust library** (`pildora-crypto`) as the crypto implementation across all platforms. Swift accesses it via FFI (UniFFI or cbindgen), the web app via WASM (wasm-bindgen), and the CLI + server import it as a Cargo workspace crate. One implementation = one audit target = zero divergence risk. This supersedes the earlier recommendation to use per-platform libsodium bindings.
 
-**Open-source crypto module:** Publish the vault encryption/decryption protocol as a standalone open-source library (MIT license) with test vectors. This is separate from the application code and enables independent security auditing.
+**Open-source crypto module:** The `pildora-crypto` crate is the auditable encryption module. Published with cross-platform test vectors that Swift FFI and WASM builds validate against.
 
-**Monorepo strategy:** Use a **monorepo** (pnpm workspaces for TypeScript packages, Swift Package Manager for Apple platforms). Structure:
+**Monorepo strategy:** Use a **Cargo workspace** for Rust components and **Swift Package Manager** for Apple platforms. Structure:
 
-`
-/packages
-  /crypto        — shared encryption protocol (TypeScript + Swift)
-  /web           — Next.js web app
-  /cli           — CLI tool
-  /api           — Hono backend
-  /drug-index    — ETL pipeline + bundled SQLite index
-/apple
-  /MedsTracker   — iOS/iPad app (SwiftUI)
-  /MedsTrackerWatch — watchOS app
-  /SharedKit     — Swift package (data model, crypto, sync)
-`
+```text
+pildora/
+  crypto/          — pildora-crypto Rust crate (lib)
+  cli/             — CLI binary crate (depends on crypto)
+  server/          — Sync server binary crate (depends on crypto)
+  ios/             — SwiftUI app (crypto via FFI)
+  web/             — Next.js app (crypto via WASM npm package)
+  data/            — Python ETL pipeline
+  docs/            — Documentation, ADRs
+```
 
 **Estimated infrastructure costs:**
 

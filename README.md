@@ -20,9 +20,9 @@ Pildora is a multi-platform medication and supplement tracker with zero-knowledg
 |---|---|---|
 | iPhone / iPad | Swift + SwiftUI | Planned |
 | Apple Watch | Swift + SwiftUI | Planned |
-| Web | Next.js + TypeScript | Planned |
-| CLI | Rust | Planned |
-| Sync Server | Go | Planned |
+| Web | Next.js + TypeScript (crypto via Rust WASM) | Planned |
+| CLI | Rust (shares crypto crate) | Planned |
+| Sync Server | Rust + Axum | Planned |
 
 ## Architecture
 
@@ -35,7 +35,8 @@ Master Password
 
 - **Encryption**: AES-256-GCM, X25519, Argon2id, HKDF-SHA256
 - **Auth**: SRP-6a (zero-knowledge — server never sees your password)
-- **Shared crypto library**: Rust → native (iOS/macOS/Watch via FFI) + WASM (web)
+- **Shared crypto library**: Rust (`pildora-crypto`) → native (iOS/macOS/Watch via FFI) + WASM (web)
+- **Sync server**: Rust + Axum (thin — stores/retrieves encrypted blobs only)
 - **Drug data**: Bundled local index (openFDA + RxNorm) — autocomplete never leaves your device
 
 ## Features
@@ -75,10 +76,10 @@ Master Password
 ```text
 pildora/
 ├── crypto/          # Shared Rust encryption library (pildora-crypto)
+├── cli/             # CLI tool (Rust, shares crypto crate)
+├── server/          # Sync server (Rust + Axum)
 ├── ios/             # iPhone + iPad + Watch app (SwiftUI)
-├── web/             # Web app (Next.js)
-├── cli/             # CLI tool (Rust)
-├── server/          # Sync server (Go)
+├── web/             # Web app (Next.js, crypto via WASM)
 ├── data/            # Drug data ETL pipeline (Python)
 ├── docs/            # Project documentation
 └── .github/         # CI/CD workflows
@@ -86,9 +87,8 @@ pildora/
 
 ### Prerequisites
 
-- Rust (for crypto library + CLI)
+- Rust (for crypto library, CLI, and sync server)
 - Xcode 16+ (for iOS/iPad/Watch)
-- Go 1.22+ (for sync server)
 - Node.js 20+ (for web app)
 - Python 3.12+ (for data pipeline)
 

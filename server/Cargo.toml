@@ -1,0 +1,18 @@
+[package]
+name = "pildora-server"
+description = "Encrypted blob sync server for Pildora"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "pildora-server"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+pildora-crypto = { path = "../crypto" }
