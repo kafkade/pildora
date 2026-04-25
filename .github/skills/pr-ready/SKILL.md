@@ -40,15 +40,29 @@ Prepare a branch for pull request: generate a PR description from the diff AND u
 
 ### Phase 2: Run quality checks
 
-1. **Verify the branch passes checks** (for the PR checklist)
-   Run whatever checks exist for the affected components:
-   - `crypto/` or `cli/` (Rust): `cargo fmt -- --check && cargo clippy -- -D warnings && cargo test`
+1. **Always run markdown linting first** (every PR touches or could touch docs):
+
+   ```sh
+   npx markdownlint-cli2 "**/*.md" --config ".github/.markdownlint.json"
+   ```
+
+   If there are errors, **fix them before proceeding**. Do not generate the PR description until linting passes.
+
+2. **Always run Rust checks if any Rust file changed** (or if any Cargo workspace member is affected):
+
+   ```sh
+   cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace
+   ```
+
+   If there are errors, **fix them before proceeding**. Do not generate the PR description until all checks pass.
+
+3. **Run component-specific checks** for other affected components:
    - `ios/` (Swift): `swiftlint` and `xcodebuild test` if configured
    - `web/` (TypeScript): `npm run lint && npm test` if configured
-   - `server/` (Go): `go vet ./... && go test ./...` if configured
    - `data/` (Python): `ruff check` and `pytest` if configured
-   - Documentation-only: no code checks needed
-   - Note which checks pass/fail to fill in the checklist accurately.
+   - Documentation-only with no Rust changes: markdown lint is sufficient
+
+4. **If any check fails**: fix the issues, re-run the checks, and only proceed to Phase 3 once everything passes. Note which checks were run and passed in the PR checklist.
 
 ### Phase 3: Generate the PR description
 

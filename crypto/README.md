@@ -1,24 +1,77 @@
 # pildora-crypto
 
-Shared zero-knowledge encryption library for Pildora.
+Shared zero-knowledge encryption library for
+[Pildora](https://github.com/kafkade/pildora).
 
 ## Overview
 
-This Rust library implements the core cryptographic operations used across all Pildora platforms:
+This Rust crate implements the cryptographic primitives and key hierarchy used
+across all Pildora platforms. One implementation = one audit target = zero
+cross-platform divergence risk.
 
-- **Key derivation**: Argon2id from master password
-- **Symmetric encryption**: AES-256-GCM (vault item encryption)
-- **Asymmetric key exchange**: X25519 (vault sharing)
-- **Key wrapping**: HKDF-SHA256 (Master Key → Vault Keys → Item Keys)
-- **Zero-knowledge auth**: SRP-6a client
+### Primitives
+
+| Primitive | Algorithm | Purpose |
+|---|---|---|
+| Key derivation | Argon2id (64 MB, 3 iterations) | Master password → Master Key |
+| Symmetric encryption | AES-256-GCM | Item and vault metadata encryption |
+| Key wrapping | AES-256-GCM keywrap | Wrapping vault/item keys |
+| Asymmetric exchange | X25519 | Vault sharing key exchange |
+| Sub-key derivation | HKDF-SHA-256 | Auth key + encryption key from MK |
+| Authentication | SRP-6a (3072-bit) | Zero-knowledge password auth |
+| Hashing | BLAKE2b | Integrity checks |
+
+### Key Hierarchy
+
+```text
+Master Password
+    → [Argon2id + salt] → Master Key (MK)
+        → [HKDF] → Authentication Key (for SRP-6a)
+        → [HKDF] → Master Encryption Key (MEK)
+            → wraps → Vault Key (VK) per vault
+                → wraps → Item Key (IK) per item
+```
+
+## Implementation
+
+Uses **RustCrypto** crates (pure Rust, no C dependencies). This ensures clean
+compilation to all targets without C linkage issues.
+
+See [ADR-001](../docs/adr/001-encryption-architecture.md) for architecture
+decisions.
 
 ## Compilation Targets
 
 | Target | Usage |
 |---|---|
-| Native (aarch64-apple-darwin, x86_64) | iOS/macOS/Watch via FFI, CLI |
+| Native (aarch64-apple-darwin, x86_64) | iOS/macOS/Watch via FFI, CLI, server |
 | WASM (wasm32-unknown-unknown) | Web app via wasm-bindgen |
+
+## Building
+
+```sh
+# Build
+cargo build -p pildora-crypto
+
+# Test
+cargo test -p pildora-crypto
+
+# Lint
+cargo clippy -p pildora-crypto -- -D warnings
+
+# Format check
+cargo fmt -p pildora-crypto -- --check
+```
+
+## Design Principles
+
+- **No unsafe code** — the crate forbids `unsafe`.
+- **Zeroize on drop** — all key material implements `Zeroize` and is cleared
+  when values go out of scope.
+- **Cross-platform test vectors** — a JSON test vector file validates that
+  native, WASM, and FFI builds produce identical output.
 
 ## Status
 
-🚧 Not yet implemented. See [ADR-001](../docs/adr/001-encryption-architecture.md) for architecture decisions.
+🚧 Foundation complete. Crypto primitives are tracked in
+[issue #6](https://github.com/kafkade/pildora/issues/6).

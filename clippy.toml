@@ -1,0 +1,10 @@
+# Pildora Clippy configuration
+#
+# Workspace-level lint configuration is in the root Cargo.toml under
+# [workspace.lints.clippy]. This file is for additional clippy settings
+# that cannot be expressed in Cargo.toml.
+#
+# Current workspace lint policy (Cargo.toml):
+#   - clippy::all = deny
+#   - clippy::pedantic = warn
+#   - unsafe_code = deny

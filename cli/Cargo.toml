@@ -1,0 +1,18 @@
+[package]
+name = "pildora-cli"
+description = "Command-line medication and supplement tracker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "pildora"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+pildora-crypto = { path = "../crypto" }

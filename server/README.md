@@ -1,6 +1,6 @@
 # Pildora Sync Server
 
-Thin encrypted blob sync server, built with Go.
+Thin encrypted blob sync server, built with Rust + Axum.
 
 ## Overview
 

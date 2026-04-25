@@ -37,10 +37,8 @@ Thumbs.db
 
 # Rust
 target/
-Cargo.lock
-# Keep Cargo.lock for binaries (CLI), ignore for libraries
-# Uncomment the line below for library crates:
-# /crypto/Cargo.lock
+# Cargo.lock is committed — workspace contains binaries (CLI, server)
+# that need reproducible builds. See: https://doc.rust-lang.org/cargo/faq.html#why-have-cargolock-in-version-control
 
 # Swift / Xcode
 *.pbxuser
@@ -56,11 +54,9 @@ Cargo.lock
 *.dSYM.zip
 *.dSYM
 
-# Go
+# Executables
 *.exe
 *.exe~
-*.test
-*.out
 
 # Python (data pipeline)
 __pycache__/

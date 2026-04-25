@@ -21,7 +21,7 @@ Monorepo with 6 components sharing a single crypto library:
 - `ios/` — iPhone + iPad + Watch apps (Swift + SwiftUI, shared codebase)
 - `web/` — Web app (Next.js + TypeScript, uses crypto via WASM)
 - `cli/` — CLI tool (Rust, shares crypto crate directly)
-- `server/` — Sync server (Go). Thin — stores/retrieves encrypted blobs only. Cannot read user data.
+- `server/` — Sync server (Rust + Axum). Thin — stores/retrieves encrypted blobs only. Cannot read user data.
 - `data/` — Drug data ETL pipeline (Python). Builds bundled local SQLite index from openFDA + RxNorm.
 
 ### Encryption Model
@@ -64,6 +64,15 @@ When proposing or implementing features that touch health data, classify them:
 - **Vault architecture**: Design all data models with multi-vault support from day one, even if multi-vault UX ships later. One vault = one encryption boundary.
 - **Disclaimers**: Every piece of drug reference data displayed must show source + date. Interaction warnings must include "This is informational only. Consult your healthcare provider."
 - **Privacy metadata**: When adding any feature that communicates with a server, document what metadata is exposed (timing, IP, blob sizes) and how it's mitigated.
+- **PR title format**: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`
+
+## Git Policy
+
+**Never execute Git commands that modify history or submit code.** This includes `git commit`, `git push`, `git rebase`, `git merge`, `git reset`, `git cherry-pick`, `git revert`, and `git tag`. Read-only commands like `git status`, `git diff`, `git log`, and `git branch` are fine. The maintainer must always review and commit changes themselves.
+
+## CI / Infrastructure Dependency
+
+**Branch protection for this repo is managed via Terraform in `kafkade/github-infra` (`repo_pildora.tf`).** The `required_status_checks` list must match the job names in `.github/workflows/validate.yml`. If you rename, add, or remove CI jobs that are used as merge gates (currently `Validate`), the corresponding IaC config must be updated or PRs will be permanently blocked. Always flag this when proposing workflow changes.
 
 ## Reference Documents
 

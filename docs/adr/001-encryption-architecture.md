@@ -74,9 +74,12 @@ subtle bugs. A single Rust library ensures identical behavior everywhere and
 simplifies security auditing.
 
 **NaCl/libsodium directly:** Considered. The chosen primitives (AES-256-GCM,
-X25519, Argon2id) overlap significantly with libsodium's API. The Rust
-implementation may use libsodium bindings or RustCrypto crates — this is an
-implementation detail to decide during Phase 0 technical spikes.
+X25519, Argon2id) overlap significantly with libsodium's API. **Decision
+(2026-04-25): Use `RustCrypto` crates, not libsodium bindings.** RustCrypto
+crates are pure Rust with no C dependencies, which ensures clean compilation
+to all targets (native, WASM, iOS FFI) without C linkage issues. The
+`sodiumoxide` crate is also less actively maintained. Specific crates to be
+used: `aes-gcm`, `argon2`, `x25519-dalek`, `hkdf`, `sha2`, `blake2`.
 
 **No item-level keys (vault key encrypts items directly):** Rejected. Item keys
 enable future granular sharing (share a single medication record without sharing
