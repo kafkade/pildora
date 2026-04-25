@@ -40,7 +40,9 @@
 //!   use safe Rust via the `RustCrypto` ecosystem.
 
 pub mod error;
+pub mod key_hierarchy;
 pub mod keys;
+pub mod primitives;
 pub mod vault;
 
 /// Encrypted blob version. Embedded as the first byte of every encrypted blob
