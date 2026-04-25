@@ -75,4 +75,3 @@ cargo fmt -p pildora-crypto -- --check
 
 🚧 Foundation complete. Crypto primitives are tracked in
 [issue #6](https://github.com/kafkade/pildora/issues/6).
-
