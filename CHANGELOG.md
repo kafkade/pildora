@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Blob size padding to fixed buckets (512 B, 2 KiB, 8 KiB, 32 KiB) to prevent size-based inference
 - Generic typed encryption helpers (`encrypt_json`/`decrypt_json`) for any serializable domain object
 - AAD domain separation tags for all key wrapping and item encryption operations
+- Cross-platform test vector file (24 vectors across 7 categories) for verifying crypto correctness on all targets
+- WASM build target via `wasm-bindgen` with full encrypt/decrypt API accessible from JavaScript
+- Configurable Argon2id parameters (`derive_master_key_with_params`) for resource-constrained environments
 
 ### Changed
 

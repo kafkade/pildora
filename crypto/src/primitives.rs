@@ -31,13 +31,43 @@ pub const WRAPPED_KEY_LEN: usize = KEY_LEN + WRAPPED_KEY_OVERHEAD;
 
 // ── Argon2id ─────────────────────────────────────────────────────────────────
 
+/// Default Argon2id memory cost in KiB (64 MiB).
+pub const ARGON2_MEMORY_KIB: u32 = 64 * 1024;
+/// Default Argon2id iteration count.
+pub const ARGON2_ITERATIONS: u32 = 3;
+/// Default Argon2id parallelism.
+pub const ARGON2_PARALLELISM: u32 = 1;
+
 /// Derive a 256-bit key from a password and salt using Argon2id.
 ///
 /// Parameters (ADR-001): 64 MiB memory, 3 iterations, parallelism 1.
 pub fn derive_key_argon2id(password: &[u8], salt: &[u8]) -> Result<[u8; KEY_LEN]> {
+    derive_key_argon2id_with_params(
+        password,
+        salt,
+        ARGON2_MEMORY_KIB,
+        ARGON2_ITERATIONS,
+        ARGON2_PARALLELISM,
+    )
+}
+
+/// Derive a 256-bit key from a password and salt using Argon2id with custom
+/// parameters. Use this when the default 64 MiB memory cost is too high
+/// (e.g. resource-constrained environments).
+///
+/// **Warning:** changing parameters produces a different key for the same
+/// password. The parameters used must be stored alongside the vault metadata
+/// so the correct key can be re-derived on unlock.
+pub fn derive_key_argon2id_with_params(
+    password: &[u8],
+    salt: &[u8],
+    memory_kib: u32,
+    iterations: u32,
+    parallelism: u32,
+) -> Result<[u8; KEY_LEN]> {
     use argon2::{Algorithm, Argon2, Params, Version};
 
-    let params = Params::new(64 * 1024, 3, 1, Some(KEY_LEN))
+    let params = Params::new(memory_kib, iterations, parallelism, Some(KEY_LEN))
         .map_err(|e| CryptoError::KeyDerivation(e.to_string()))?;
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
 

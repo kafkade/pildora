@@ -49,6 +49,8 @@ decisions.
 
 ## Building
 
+### Native
+
 ```sh
 # Build
 cargo build -p pildora-crypto
@@ -63,6 +65,24 @@ cargo clippy -p pildora-crypto -- -D warnings
 cargo fmt -p pildora-crypto -- --check
 ```
 
+### WASM
+
+```sh
+# Build for web
+wasm-pack build crypto --target web --features wasm
+
+# Build for Node.js
+wasm-pack build crypto --target nodejs --features wasm
+
+# Run Node.js test harness
+node crypto/tests/wasm_node_test.cjs
+```
+
+The WASM build uses the same cryptographic implementation as native. Argon2id
+parameters default to 64 MiB memory — use `derive_master_key_with_params` for
+constrained environments. **Different parameters produce different keys;** store
+them with vault metadata.
+
 ## Design Principles
 
 - **No unsafe code** — the crate forbids `unsafe`.
@@ -73,5 +93,6 @@ cargo fmt -p pildora-crypto -- --check
 
 ## Status
 
-🚧 Foundation complete. Crypto primitives are tracked in
+🚧 Foundation complete — native and WASM builds working, test vectors passing
+on both targets. Crypto primitives are tracked in
 [issue #6](https://github.com/kafkade/pildora/issues/6).

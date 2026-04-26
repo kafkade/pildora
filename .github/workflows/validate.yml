@@ -18,3 +18,32 @@ jobs:
         with:
           globs: "**/*.md"
           config: ".github/.markdownlint.json"
+
+  # NOTE: Adding Rust / WASM as required status checks requires updating
+  # kafkade/github-infra → repo_pildora.tf (required_status_checks).
+  rust:
+    name: Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --workspace -- -D warnings
+      - run: cargo test --workspace
+
+  wasm:
+    name: WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: cargo install wasm-pack
+      - run: cd crypto && wasm-pack build --target nodejs --features wasm
+      - run: node crypto/tests/wasm_node_test.cjs
