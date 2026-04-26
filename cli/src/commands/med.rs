@@ -1,4 +1,5 @@
 use std::io::{self, BufRead, Write};
+use std::path::PathBuf;
 use std::process;
 
 use chrono::Utc;
@@ -8,6 +9,7 @@ use uuid::Uuid;
 
 use crate::cli::MedCommands;
 use crate::context::UnlockedContext;
+use crate::drug_index;
 use crate::models::Medication;
 use crate::storage::typed::{list_typed_items, store_typed_item};
 
@@ -24,6 +26,7 @@ pub fn run(cmd: &MedCommands) {
             prescriber,
             pharmacy,
             notes,
+            drug_index,
         } => add(
             name,
             dosage.as_deref(),
@@ -33,6 +36,7 @@ pub fn run(cmd: &MedCommands) {
             prescriber.as_deref(),
             pharmacy.as_deref(),
             notes.as_deref(),
+            drug_index.as_ref(),
         ),
         MedCommands::List => list(),
         MedCommands::Show { name } => show(name),
@@ -55,6 +59,27 @@ pub fn run(cmd: &MedCommands) {
     }
 }
 
+/// Resolve the drug index path: explicit flag > default location > None.
+fn resolve_index_path(explicit: Option<&PathBuf>) -> Option<PathBuf> {
+    if let Some(p) = explicit {
+        if p.exists() {
+            return Some(p.clone());
+        }
+        return None;
+    }
+    let default = drug_index::default_index_path();
+    if default.exists() {
+        Some(default)
+    } else {
+        None
+    }
+}
+
+/// Determine whether the caller provided enough flags to skip interactive selection.
+fn is_non_interactive(generic: Option<&str>, brand: Option<&str>) -> bool {
+    generic.is_some() || brand.is_some()
+}
+
 #[allow(clippy::too_many_arguments)]
 fn add(
     name: &str,
@@ -65,21 +90,26 @@ fn add(
     prescriber: Option<&str>,
     pharmacy: Option<&str>,
     notes: Option<&str>,
+    explicit_index: Option<&PathBuf>,
 ) {
     let ctx = UnlockedContext::require();
     let now = Utc::now();
 
+    // Try autocomplete from the drug index
+    let (resolved_generic, resolved_brand, resolved_rxnorm) =
+        attempt_autocomplete(name, generic, brand, explicit_index);
+
     let med = Medication {
         id: Uuid::new_v4(),
         name: name.to_string(),
-        generic_name: generic.map(String::from),
-        brand_name: brand.map(String::from),
+        generic_name: generic.map(String::from).or(resolved_generic),
+        brand_name: brand.map(String::from).or(resolved_brand),
         dosage: dosage.unwrap_or_default().to_string(),
         form: form.unwrap_or_default().to_string(),
         prescriber: prescriber.map(String::from),
         pharmacy: pharmacy.map(String::from),
         notes: notes.map(String::from),
-        rxnorm_id: None,
+        rxnorm_id: resolved_rxnorm,
         start_date: None,
         end_date: None,
         created_at: now,
@@ -98,6 +128,93 @@ fn add(
         "\u{2713}".green(),
         med.name.green()
     );
+
+    // Show what was auto-populated
+    if let Some(ref g) = med.generic_name {
+        println!("  Generic: {g}");
+    }
+    if let Some(ref b) = med.brand_name {
+        println!("  Brand:   {b}");
+    }
+    if let Some(ref r) = med.rxnorm_id {
+        println!("  RxNorm:  {r}");
+    }
+}
+
+/// Try to match the medication name against the drug index.
+///
+/// Returns `(generic_name, brand_name, rxnorm_id)` resolved from the index,
+/// or `(None, None, None)` when no index is available or the user skips.
+fn attempt_autocomplete(
+    name: &str,
+    generic: Option<&str>,
+    brand: Option<&str>,
+    explicit_index: Option<&PathBuf>,
+) -> (Option<String>, Option<String>, Option<String>) {
+    let Some(index_path) = resolve_index_path(explicit_index) else {
+        return (None, None, None);
+    };
+
+    let matches = drug_index::search_all(&index_path, name, 10);
+    if matches.is_empty() {
+        return (None, None, None);
+    }
+
+    // Non-interactive mode: just note the match count and use the best match
+    if is_non_interactive(generic, brand) {
+        let best = &matches[0];
+        eprintln!(
+            "{} Found {} drug index match(es) for \"{name}\"",
+            "ℹ".blue(),
+            matches.len()
+        );
+        return (best.generic_name.clone(), None, best.rxcui.clone());
+    }
+
+    // Interactive selection
+    eprintln!();
+    eprintln!("Drug matches for \"{}\":", name.yellow());
+    for (i, m) in matches.iter().enumerate() {
+        let generic_display = m
+            .generic_name
+            .as_deref()
+            .map_or(String::new(), |g| format!(", generic: {g}"));
+        eprintln!(
+            "  {}. {} (type: {}{})",
+            i + 1,
+            m.preferred_name.bold(),
+            m.product_type,
+            generic_display,
+        );
+    }
+    eprintln!();
+    eprint!(
+        "Select [1-{}] or press Enter for manual entry: ",
+        matches.len()
+    );
+    io::stderr().flush().ok();
+
+    let mut input = String::new();
+    if io::stdin().lock().read_line(&mut input).is_err() {
+        return (None, None, None);
+    }
+
+    let selection: usize = match input.trim().parse() {
+        Ok(n) if n >= 1 && n <= matches.len() => n,
+        _ => return (None, None, None),
+    };
+
+    let chosen = &matches[selection - 1];
+
+    // Look up brand names from aliases
+    let brand_names = drug_index::get_brand_names(&index_path, &chosen.preferred_name);
+    let brand_name = brand_names.into_iter().next();
+
+    (
+        chosen.generic_name.clone(),
+        brand_name,
+        chosen.rxcui.clone(),
+    )
 }
 
 fn list() {
