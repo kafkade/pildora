@@ -45,6 +45,9 @@ pub mod keys;
 pub mod primitives;
 pub mod vault;
 
+#[cfg(feature = "wasm")]
+pub mod wasm;
+
 /// Encrypted blob version. Embedded as the first byte of every encrypted blob
 /// to enable client-side schema migration on decryption.
 pub const BLOB_VERSION: u8 = 1;
