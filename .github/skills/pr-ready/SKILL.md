@@ -43,26 +43,37 @@ Prepare a branch for pull request: generate a PR description from the diff AND u
 1. **Always run markdown linting first** (every PR touches or could touch docs):
 
    ```sh
-   npx markdownlint-cli2 "**/*.md" --config ".github/.markdownlint.json"
+   npx markdownlint-cli2 "**/*.md"
    ```
+
+   The repo-root `.markdownlint-cli2.jsonc` auto-configures rules and excludes
+   build artifacts (`target/`, `node_modules/`, `.venv/`, `pkg/`).
 
    If there are errors, **fix them before proceeding**. Do not generate the PR description until linting passes.
 
 2. **Always run Rust checks if any Rust file changed** (or if any Cargo workspace member is affected):
 
+   Run each step separately so failures are easy to identify:
+
    ```sh
-   cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace
+   cargo fmt --check
+   cargo clippy --workspace -- -D warnings
+   cargo test --workspace
    ```
 
-   If there are errors, **fix them before proceeding**. Do not generate the PR description until all checks pass.
+   If `cargo fmt --check` fails, run `cargo fmt` to fix, then re-run all three
+   checks from the top. If `cargo clippy` fails, fix the warning, then re-run
+   **all three checks from the top** (including `cargo fmt --check` — code fixes
+   can introduce formatting changes). Only proceed once all three pass in a
+   single run with no fixes in between.
 
 3. **Run component-specific checks** for other affected components:
    - `ios/` (Swift): `swiftlint` and `xcodebuild test` if configured
    - `web/` (TypeScript): `npm run lint && npm test` if configured
-   - `data/` (Python): `ruff check` and `pytest` if configured
+   - `data/` (Python): `ruff check src/ tests/` and `pytest` if configured
    - Documentation-only with no Rust changes: markdown lint is sufficient
 
-4. **If any check fails**: fix the issues, re-run the checks, and only proceed to Phase 3 once everything passes. Note which checks were run and passed in the PR checklist.
+4. **If any check fails**: fix the issues, then **re-run ALL checks from step 1** — not just the one that failed. A clippy fix can break formatting; a formatting fix can break tests. Only proceed to Phase 3 once every check passes in a clean run with no intervening edits.
 
 ### Phase 3: Generate the PR description
 

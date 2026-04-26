@@ -62,8 +62,7 @@ impl Session {
 
     /// Check if a session is active (session file exists and is non-empty).
     pub fn is_active(&self) -> bool {
-        self.session_path.exists()
-            && fs::metadata(&self.session_path).is_ok_and(|m| m.len() > 0)
+        self.session_path.exists() && fs::metadata(&self.session_path).is_ok_and(|m| m.len() > 0)
     }
 }
 
