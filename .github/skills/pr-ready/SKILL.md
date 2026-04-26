@@ -67,6 +67,13 @@ Prepare a branch for pull request: generate a PR description from the diff AND u
    can introduce formatting changes). Only proceed once all three pass in a
    single run with no fixes in between.
 
+   **Toolchain version gap:** CI uses the latest stable Rust, which may have
+   newer clippy lints than the local toolchain. If CI fails with a clippy error
+   that passed locally, fix it immediately — do not assume local-passing means
+   CI-passing. Common culprits: `unnecessary_sort_by`, `manual_let_else`,
+   `needless_pass_by_value`. When in doubt, prefer the idiomatic form clippy
+   suggests.
+
 3. **Run component-specific checks** for other affected components:
    - `ios/` (Swift): `swiftlint` and `xcodebuild test` if configured
    - `web/` (TypeScript): `npm run lint && npm test` if configured

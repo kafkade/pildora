@@ -255,7 +255,7 @@ fn history(med_query: Option<&str>, days: u32) {
     }
 
     // Sort by taken_at descending
-    filtered.sort_by(|a, b| b.taken_at.cmp(&a.taken_at));
+    filtered.sort_by_key(|l| std::cmp::Reverse(l.taken_at));
 
     // Group by date
     let mut current_date = None;
