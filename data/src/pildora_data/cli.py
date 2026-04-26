@@ -34,7 +34,8 @@ def main() -> None:
         help="Directory for output files (default: output/)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Enable verbose logging",
     )

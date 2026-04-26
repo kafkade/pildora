@@ -63,10 +63,18 @@ class TestBuildDrugConcepts:
 
     def test_groups_by_generic_name(self) -> None:
         drugs = [
-            DrugProduct(ndc="001", drug_name="LIPITOR", generic_name="ATORVASTATIN CALCIUM",
-                        brand_name="LIPITOR"),
-            DrugProduct(ndc="002", drug_name="ATORVASTATIN", generic_name="ATORVASTATIN CALCIUM",
-                        brand_name=""),
+            DrugProduct(
+                ndc="001",
+                drug_name="LIPITOR",
+                generic_name="ATORVASTATIN CALCIUM",
+                brand_name="LIPITOR",
+            ),
+            DrugProduct(
+                ndc="002",
+                drug_name="ATORVASTATIN",
+                generic_name="ATORVASTATIN CALCIUM",
+                brand_name="",
+            ),
         ]
         concepts = build_drug_concepts(drugs)
         assert len(concepts) == 1
@@ -76,10 +84,10 @@ class TestBuildDrugConcepts:
 
     def test_collects_brand_names(self) -> None:
         drugs = [
-            DrugProduct(ndc="001", drug_name="ADVIL", generic_name="IBUPROFEN",
-                        brand_name="ADVIL"),
-            DrugProduct(ndc="002", drug_name="MOTRIN", generic_name="IBUPROFEN",
-                        brand_name="MOTRIN"),
+            DrugProduct(ndc="001", drug_name="ADVIL", generic_name="IBUPROFEN", brand_name="ADVIL"),
+            DrugProduct(
+                ndc="002", drug_name="MOTRIN", generic_name="IBUPROFEN", brand_name="MOTRIN"
+            ),
         ]
         concepts = build_drug_concepts(drugs)
         assert concepts["ibuprofen"]["brand_names"] == {"ADVIL", "MOTRIN"}
@@ -179,8 +187,12 @@ class TestBuildIndex:
     def test_rxnorm_cache_applied(self, tmp_path: Path) -> None:
         db_path = tmp_path / "test.sqlite"
         drugs = [
-            DrugProduct(ndc="001", drug_name="LIPITOR", generic_name="ATORVASTATIN CALCIUM",
-                        brand_name="LIPITOR"),
+            DrugProduct(
+                ndc="001",
+                drug_name="LIPITOR",
+                generic_name="ATORVASTATIN CALCIUM",
+                brand_name="LIPITOR",
+            ),
         ]
         cache = {"atorvastatin calcium": "83367"}
         build_index(drugs, [], db_path, rxnorm_cache=cache)

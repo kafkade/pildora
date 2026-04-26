@@ -91,7 +91,11 @@ the entire vault) and reduce the blast radius of a key compromise.
   it. Phase 0 must prioritize this.
 - FFI bridging (Rust → Swift, Rust → WASM) adds build complexity and must be
   validated in technical spikes.
-- Argon2id with 64MB memory may be slow on older devices — need to benchmark
-  and potentially adjust parameters.
+- Argon2id with 64 MiB memory may be slow on older devices or in constrained
+  environments (e.g., WASM in browsers). The `derive_key_argon2id_with_params`
+  function allows adjusting memory cost, iteration count, and parallelism.
+  **Different parameters produce different keys**, so the parameters used must
+  be stored alongside vault metadata. Defaults remain 64 MiB memory,
+  3 iterations, parallelism 1.
 - Recovery key loss = permanent data loss. Onboarding UX must forcefully
   communicate this.

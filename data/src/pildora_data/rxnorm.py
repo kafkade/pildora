@@ -77,9 +77,7 @@ def get_related_names(
         return {"brand_names": [], "generic_names": []}
 
     result: dict[str, list[str]] = {"brand_names": [], "generic_names": []}
-    concept_groups = (
-        data.get("relatedGroup", {}).get("conceptGroup", [])
-    )
+    concept_groups = data.get("relatedGroup", {}).get("conceptGroup", [])
 
     for group in concept_groups:
         tty = group.get("tty", "")
