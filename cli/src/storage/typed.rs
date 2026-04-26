@@ -22,6 +22,7 @@ pub fn store_typed_item<T: serde::Serialize>(
 }
 
 /// Load and decrypt a typed item by ID.
+#[allow(dead_code)]
 pub fn load_typed_item<T: serde::de::DeserializeOwned>(
     storage: &Storage,
     vault_key: &VaultKey,

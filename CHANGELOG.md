@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Vault initialization with master password, Argon2id key derivation, and recovery key generation
 - Vault unlock/lock with session persistence for seamless multi-command workflows
 - Recovery key display and regeneration for account recovery
+- Medication CRUD commands: add (with flags for dosage, form, prescriber, pharmacy), list (table view), show (detail view with name matching), edit, and delete
+- Medication schedules with flexible patterns: daily, multi-daily, every N days, specific weekdays, and PRN (as needed)
+- Dose logging: log taken doses, skip with reason, view today's doses with status (taken/missed/upcoming/skipped), and dose history
 
 ### Changed
 

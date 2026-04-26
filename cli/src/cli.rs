@@ -69,6 +69,21 @@ pub enum MedCommands {
         /// Dosage form (e.g. tablet, capsule)
         #[arg(short, long)]
         form: Option<String>,
+        /// Generic name
+        #[arg(long)]
+        generic: Option<String>,
+        /// Brand name
+        #[arg(long)]
+        brand: Option<String>,
+        /// Prescriber
+        #[arg(long)]
+        prescriber: Option<String>,
+        /// Pharmacy
+        #[arg(long)]
+        pharmacy: Option<String>,
+        /// Notes
+        #[arg(short, long)]
+        notes: Option<String>,
     },
     /// List all medications
     List,
@@ -81,6 +96,21 @@ pub enum MedCommands {
     Edit {
         /// Medication name or ID
         name: String,
+        /// New dosage
+        #[arg(short, long)]
+        dosage: Option<String>,
+        /// New form
+        #[arg(short, long)]
+        form: Option<String>,
+        /// New notes
+        #[arg(short, long)]
+        notes: Option<String>,
+        /// New prescriber
+        #[arg(long)]
+        prescriber: Option<String>,
+        /// New pharmacy
+        #[arg(long)]
+        pharmacy: Option<String>,
     },
     /// Delete a medication
     Delete {
@@ -98,6 +128,9 @@ pub enum DoseCommands {
     Log {
         /// Medication name
         medication: String,
+        /// Time taken (HH:MM, defaults to now)
+        #[arg(long)]
+        at: Option<String>,
         /// Notes
         #[arg(short, long)]
         notes: Option<String>,
@@ -114,6 +147,8 @@ pub enum DoseCommands {
     Today,
     /// Show dose history
     History {
+        /// Medication name (omit for all)
+        medication: Option<String>,
         /// Number of days to show (default: 7)
         #[arg(short, long, default_value = "7")]
         days: u32,
@@ -126,9 +161,21 @@ pub enum ScheduleCommands {
     Set {
         /// Medication name
         medication: String,
-        /// Times (e.g. "08:00,20:00")
+        /// Schedule pattern: daily, every, days, prn
+        #[arg(short, long, default_value = "daily")]
+        pattern: String,
+        /// Times (comma-separated, e.g. "08:00,20:00"). Not needed for PRN.
         #[arg(short, long)]
-        times: String,
+        times: Option<String>,
+        /// Interval for 'every' pattern (e.g. 3 for every 3 days)
+        #[arg(short, long)]
+        interval: Option<u32>,
+        /// Days for 'days' pattern (e.g. "mon,wed,fri")
+        #[arg(short = 'D', long)]
+        days: Option<String>,
+        /// Start date for 'every' pattern (YYYY-MM-DD, defaults to today)
+        #[arg(long)]
+        start_date: Option<String>,
     },
     /// Show the schedule for a medication or all medications
     Show {
