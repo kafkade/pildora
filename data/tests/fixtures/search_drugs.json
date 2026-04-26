@@ -1,0 +1,204 @@
+{
+  "results": [
+    {
+      "product_ndc": "0002-0800",
+      "generic_name": "ATORVASTATIN CALCIUM",
+      "labeler_name": "Pfizer Laboratories",
+      "brand_name": "LIPITOR",
+      "dosage_form": "TABLET, FILM COATED",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "ATORVASTATIN CALCIUM", "strength": "10 mg/1"}]
+    },
+    {
+      "product_ndc": "0002-0801",
+      "generic_name": "ATORVASTATIN CALCIUM",
+      "labeler_name": "Generic Pharma Inc",
+      "brand_name": "",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "ATORVASTATIN CALCIUM", "strength": "20 mg/1"}]
+    },
+    {
+      "product_ndc": "0069-0150",
+      "generic_name": "SERTRALINE HYDROCHLORIDE",
+      "labeler_name": "Pfizer Inc",
+      "brand_name": "ZOLOFT",
+      "dosage_form": "TABLET, FILM COATED",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "SERTRALINE HYDROCHLORIDE", "strength": "50 mg/1"}]
+    },
+    {
+      "product_ndc": "0006-0021",
+      "generic_name": "LISINOPRIL",
+      "labeler_name": "Merck Sharp & Dohme LLC",
+      "brand_name": "PRINIVIL",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "LISINOPRIL", "strength": "5 mg/1"}]
+    },
+    {
+      "product_ndc": "0591-0405",
+      "generic_name": "METFORMIN HYDROCHLORIDE",
+      "labeler_name": "Watson Laboratories, Inc.",
+      "brand_name": "GLUCOPHAGE",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "METFORMIN HYDROCHLORIDE", "strength": "500 mg/1"}]
+    },
+    {
+      "product_ndc": "0591-0406",
+      "generic_name": "METFORMIN HYDROCHLORIDE",
+      "labeler_name": "Teva Pharmaceuticals",
+      "brand_name": "",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "METFORMIN HYDROCHLORIDE", "strength": "1000 mg/1"}]
+    },
+    {
+      "product_ndc": "0781-1506",
+      "generic_name": "IBUPROFEN",
+      "labeler_name": "Sandoz Inc",
+      "brand_name": "ADVIL",
+      "dosage_form": "TABLET, FILM COATED",
+      "route": ["ORAL"],
+      "product_type": "HUMAN OTC DRUG",
+      "active_ingredients": [{"name": "IBUPROFEN", "strength": "200 mg/1"}]
+    },
+    {
+      "product_ndc": "0781-1507",
+      "generic_name": "IBUPROFEN",
+      "labeler_name": "Bayer",
+      "brand_name": "MOTRIN",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN OTC DRUG",
+      "active_ingredients": [{"name": "IBUPROFEN", "strength": "400 mg/1"}]
+    },
+    {
+      "product_ndc": "0363-0109",
+      "generic_name": "ACETAMINOPHEN",
+      "labeler_name": "Walgreens",
+      "brand_name": "TYLENOL",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN OTC DRUG",
+      "active_ingredients": [{"name": "ACETAMINOPHEN", "strength": "500 mg/1"}]
+    },
+    {
+      "product_ndc": "0603-3213",
+      "generic_name": "ASPIRIN",
+      "labeler_name": "Bayer Healthcare",
+      "brand_name": "BAYER ASPIRIN",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN OTC DRUG",
+      "active_ingredients": [{"name": "ASPIRIN", "strength": "325 mg/1"}]
+    },
+    {
+      "product_ndc": "0093-3150",
+      "generic_name": "AMOXICILLIN",
+      "labeler_name": "Teva Pharmaceuticals",
+      "brand_name": "AMOXIL",
+      "dosage_form": "CAPSULE",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "AMOXICILLIN", "strength": "500 mg/1"}]
+    },
+    {
+      "product_ndc": "0078-0401",
+      "generic_name": "AMLODIPINE BESYLATE",
+      "labeler_name": "Novartis Pharmaceuticals Corp",
+      "brand_name": "NORVASC",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "AMLODIPINE BESYLATE", "strength": "5 mg/1"}]
+    },
+    {
+      "product_ndc": "0049-0050",
+      "generic_name": "OMEPRAZOLE",
+      "labeler_name": "AstraZeneca",
+      "brand_name": "PRILOSEC",
+      "dosage_form": "CAPSULE, DELAYED RELEASE",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "OMEPRAZOLE", "strength": "20 mg/1"}]
+    },
+    {
+      "product_ndc": "0008-0841",
+      "generic_name": "LEVOTHYROXINE SODIUM",
+      "labeler_name": "AbbVie Inc",
+      "brand_name": "SYNTHROID",
+      "dosage_form": "TABLET",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "LEVOTHYROXINE SODIUM", "strength": "50 mcg/1"}]
+    },
+    {
+      "product_ndc": "0071-0155",
+      "generic_name": "GABAPENTIN",
+      "labeler_name": "Pfizer Inc",
+      "brand_name": "NEURONTIN",
+      "dosage_form": "CAPSULE",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "GABAPENTIN", "strength": "300 mg/1"}]
+    },
+    {
+      "product_ndc": "0310-0272",
+      "generic_name": "LOSARTAN POTASSIUM",
+      "labeler_name": "Merck & Co",
+      "brand_name": "COZAAR",
+      "dosage_form": "TABLET, FILM COATED",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "LOSARTAN POTASSIUM", "strength": "50 mg/1"}]
+    },
+    {
+      "product_ndc": "0074-3799",
+      "generic_name": "HYDROCHLOROTHIAZIDE",
+      "labeler_name": "Qualitest Pharma",
+      "brand_name": "MICROZIDE",
+      "dosage_form": "CAPSULE",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "HYDROCHLOROTHIAZIDE", "strength": "12.5 mg/1"}]
+    },
+    {
+      "product_ndc": "0173-0519",
+      "generic_name": "FLUTICASONE PROPIONATE",
+      "labeler_name": "GlaxoSmithKline",
+      "brand_name": "FLONASE",
+      "dosage_form": "SPRAY",
+      "route": ["NASAL"],
+      "product_type": "HUMAN OTC DRUG",
+      "active_ingredients": [{"name": "FLUTICASONE PROPIONATE", "strength": "50 mcg/1"}]
+    },
+    {
+      "product_ndc": "0069-5400",
+      "generic_name": "CELECOXIB",
+      "labeler_name": "Pfizer Inc",
+      "brand_name": "CELEBREX",
+      "dosage_form": "CAPSULE",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "CELECOXIB", "strength": "200 mg/1"}]
+    },
+    {
+      "product_ndc": "0006-0071",
+      "generic_name": "SIMVASTATIN",
+      "labeler_name": "Merck Sharp & Dohme LLC",
+      "brand_name": "ZOCOR",
+      "dosage_form": "TABLET, FILM COATED",
+      "route": ["ORAL"],
+      "product_type": "HUMAN PRESCRIPTION DRUG",
+      "active_ingredients": [{"name": "SIMVASTATIN", "strength": "20 mg/1"}]
+    }
+  ]
+}

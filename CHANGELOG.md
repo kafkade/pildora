@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Cross-platform test vector file (24 vectors across 7 categories) for verifying crypto correctness on all targets
 - WASM build target via `wasm-bindgen` with full encrypt/decrypt API accessible from JavaScript
 - Configurable Argon2id parameters (`derive_master_key_with_params`) for resource-constrained environments
+- Drug data ETL pipeline (openFDA NDC + DailyMed) with normalized JSONL output
+- SQLite FTS5 search index with concept-based deduplication for drug autocomplete
+- RxNorm REST API integration for drug concept normalization
 
 ### Changed
 
