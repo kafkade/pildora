@@ -617,7 +617,7 @@ This is the **only architecture that maintains full zero-knowledge guarantees** 
 | **Website / Web App** | **Next.js (App Router) + React + TypeScript**, pildora-crypto via WASM | SSR for marketing/SEO pages, SPA for dashboard. Crypto operations run in Rust WASM — no JS crypto reimplementation. Rust WASM UI frameworks (Leptos, Yew) were evaluated and rejected for maturity reasons (see ADR-006). |
 | **Database** | **SQLite (on-device)** for encrypted blob storage; **PostgreSQL or SQLite** (server-side) for encrypted blob metadata | On-device: plain SQLite storing pre-encrypted blobs (CLI) or SQLCipher (iOS). Server: Axum + SQLx with PostgreSQL or SQLite. |
 | **Auth & Key Exchange** | **SRP-6a** for zero-knowledge auth; **Argon2id** for key derivation; **X25519** for public-key key exchange | SRP prevents server from ever seeing the password; Argon2id is the current best-practice memory-hard KDF; X25519 for efficient vault sharing key wrapping |
-| **E2E Encryption Layer** | **Single Rust library** (`pildora-crypto`) using RustCrypto crates or ring | One implementation across all platforms. Swift access via FFI, web access via WASM. Eliminates the multi-library divergence risk of per-platform libsodium bindings. |
+| **E2E Encryption Layer** | **Single Rust library** (`pildora-crypto`) using RustCrypto crates | One implementation across all platforms. Swift access via FFI, web access via WASM. Eliminates the multi-library divergence risk of per-platform crypto implementations. |
 | **Drug Data Pipeline** | **Python ETL scripts** into SQLite index, bundled with app releases | Python for batch data processing (openFDA bulk download, RxNorm normalization); output is a compressed SQLite file shipped as an app asset |
 | **Notifications** | **iOS UNUserNotificationCenter (local)** + watchOS mirroring | Local notifications are E2E compatible and highly reliable; no server involvement |
 | **CI/CD** | **GitHub Actions** | Matrix builds for Rust (Linux, macOS, Windows), iOS/Watch (Xcode on macOS runners), web (Node), data pipeline (Python). Fastlane for iOS builds and TestFlight distribution. |
@@ -653,7 +653,7 @@ pildora/
 
 | Primitive | Algorithm | Purpose |
 |---|---|---|
-| Symmetric encryption | AES-256-GCM (via libsodium secretbox/AEAD) | Item encryption, vault metadata encryption |
+| Symmetric encryption | AES-256-GCM (via RustCrypto `aes-gcm`) | Item encryption, vault metadata encryption |
 | Key derivation | Argon2id (memory: 64MB, iterations: 3, parallelism: 1) | Master password to master key |
 | Key wrapping | AES-256-GCM keywrap | Wrapping vault keys with master key, item keys with vault key |
 | Asymmetric key exchange | X25519 (Curve25519 Diffie-Hellman) | Vault sharing — encrypt vault key to recipient's public key |

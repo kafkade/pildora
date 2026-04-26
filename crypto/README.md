@@ -13,7 +13,7 @@ cross-platform divergence risk.
 
 | Primitive | Algorithm | Purpose |
 |---|---|---|
-| Key derivation | Argon2id (64 MB, 3 iterations) | Master password → Master Key |
+| Key derivation | Argon2id (64 MiB, 3 iterations — configurable) | Master password → Master Key |
 | Symmetric encryption | AES-256-GCM | Item and vault metadata encryption |
 | Key wrapping | AES-256-GCM keywrap | Wrapping vault/item keys |
 | Asymmetric exchange | X25519 | Vault sharing key exchange |
@@ -96,6 +96,9 @@ them with vault metadata.
 
 ## Status
 
-✅ Core implementation complete — all cryptographic primitives, key hierarchy,
-item-level encryption, cross-platform test vectors, and WASM build target are
-implemented and tested (issues #5–#10).
+✅ The crypto library is **complete and stable** — all cryptographic primitives,
+key hierarchy, item-level encryption, cross-platform test vectors, and WASM
+build target are implemented and tested. Argon2id parameters are configurable
+via `derive_key_argon2id_with_params` for resource-constrained environments
+(e.g., WASM in browsers). Different parameters produce different keys, so
+parameters must be stored with vault metadata.

@@ -1,7 +1,7 @@
 # Pildora
 
 > [!NOTE]
-> **Pildora is under active development.** The encryption library and drug data pipeline are functional. App development has not started yet.
+> **Pildora is under active development.** The encryption library, CLI, and drug data pipeline are functional. iOS and web app development has not started yet.
 
 **Your health data is yours. We can't see it even if we wanted to.**
 
@@ -69,14 +69,14 @@ Master Password
 
 ## Development
 
-> 🚧 Core infrastructure is complete. App development is next.
+> 🚧 Crypto library, CLI, and drug data pipeline are complete. iOS and web app development is next.
 
 ### Monorepo Structure
 
 ```text
 pildora/
 ├── crypto/          # Shared Rust encryption library ✅
-├── cli/             # CLI tool (Rust) — scaffold only
+├── cli/             # CLI tool (Rust) ✅
 ├── server/          # Sync server (Rust + Axum) — scaffold only
 ├── ios/             # iPhone + iPad + Watch app (SwiftUI) — planned
 ├── web/             # Web app (Next.js, crypto via WASM) — planned
@@ -89,7 +89,7 @@ pildora/
 
 - Rust (for crypto library, CLI, and sync server)
 - Xcode 16+ (for iOS/iPad/Watch)
-- Node.js 20+ (for web app)
+- Node.js 22+ (for web app)
 - Python 3.11+ (for data pipeline)
 
 ## License
