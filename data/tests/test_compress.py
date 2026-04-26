@@ -13,10 +13,20 @@ from pildora_data.models import DrugProduct, Supplement
 def _build_sample_db(tmp_path: Path) -> Path:
     db_path = tmp_path / "test.sqlite"
     drugs = [
-        DrugProduct(ndc="001", drug_name="ASPIRIN", generic_name="ASPIRIN",
-                    brand_name="BAYER", strength="325 mg/1"),
-        DrugProduct(ndc="002", drug_name="LIPITOR", generic_name="ATORVASTATIN CALCIUM",
-                    brand_name="LIPITOR", strength="10 mg/1"),
+        DrugProduct(
+            ndc="001",
+            drug_name="ASPIRIN",
+            generic_name="ASPIRIN",
+            brand_name="BAYER",
+            strength="325 mg/1",
+        ),
+        DrugProduct(
+            ndc="002",
+            drug_name="LIPITOR",
+            generic_name="ATORVASTATIN CALCIUM",
+            brand_name="LIPITOR",
+            strength="10 mg/1",
+        ),
     ]
     supplements = [
         Supplement(id="s1", name="Vitamin D3", ingredients=["CHOLECALCIFEROL"]),
