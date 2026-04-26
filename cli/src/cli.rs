@@ -35,8 +35,11 @@ pub enum Commands {
     #[command(subcommand)]
     Schedule(ScheduleCommands),
 
-    /// Export all data (decrypted JSON)
+    /// Export all data (decrypted JSON or CSV)
     Export {
+        /// Export format: json or csv
+        #[arg(short, long, default_value = "json")]
+        format: String,
         /// Output file path (defaults to stdout)
         #[arg(short, long)]
         output: Option<std::path::PathBuf>,
@@ -84,6 +87,9 @@ pub enum MedCommands {
         /// Notes
         #[arg(short, long)]
         notes: Option<String>,
+        /// Path to drug index database (for autocomplete)
+        #[arg(long, env = "PILDORA_DRUG_INDEX")]
+        drug_index: Option<std::path::PathBuf>,
     },
     /// List all medications
     List,

@@ -1,6 +1,8 @@
 mod cli;
 mod commands;
 mod context;
+mod drug_index;
+pub mod export;
 mod models;
 pub mod schedule_engine;
 mod session;
@@ -20,7 +22,7 @@ fn main() {
         Commands::Med(cmd) => commands::med::run(&cmd),
         Commands::Dose(ref cmd) => commands::dose::run(cmd),
         Commands::Schedule(ref cmd) => commands::schedule::run(cmd),
-        Commands::Export { output } => commands::export::run(output),
+        Commands::Export { format, output } => commands::export::run(&format, output),
         Commands::RecoveryKey { regenerate } => commands::recovery::run(regenerate),
         Commands::Completions { shell } => commands::completions::run(shell),
     }

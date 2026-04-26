@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Medication CRUD commands: add (with flags for dosage, form, prescriber, pharmacy), list (table view), show (detail view with name matching), edit, and delete
 - Medication schedules with flexible patterns: daily, multi-daily, every N days, specific weekdays, and PRN (as needed)
 - Dose logging: log taken doses, skip with reason, view today's doses with status (taken/missed/upcoming/skipped), and dose history
+- Drug autocomplete during `med add` from the local FTS5 search index with auto-populated generic name, brand name, and RxNorm ID
+- Full vault data export in JSON and CSV formats via `pildora export`
 
 ### Changed
 
