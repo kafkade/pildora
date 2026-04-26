@@ -75,6 +75,9 @@ venv/
 # Drug data index (generated, large)
 data/output/*.sqlite
 data/output/*.db
+data/output/*.jsonl
+data/output/quality_report.txt
+data/cache/
 
 # Test / Coverage
 coverage/

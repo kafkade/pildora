@@ -1,0 +1,77 @@
+{
+  "data": [
+    {
+      "setid": "supp-001",
+      "spl_name": "Vitamin D3 2000 IU",
+      "labeler": "Nature Made",
+      "products": [{"dosage_form": "SOFTGEL"}],
+      "active_ingredients": ["CHOLECALCIFEROL"]
+    },
+    {
+      "setid": "supp-002",
+      "spl_name": "Vitamin C 1000mg",
+      "labeler": "NOW Foods",
+      "products": [{"dosage_form": "TABLET"}],
+      "active_ingredients": ["ASCORBIC ACID"]
+    },
+    {
+      "setid": "supp-003",
+      "spl_name": "Fish Oil Omega-3",
+      "labeler": "Nordic Naturals",
+      "products": [{"dosage_form": "CAPSULE, LIQUID FILLED"}],
+      "active_ingredients": [
+        {"name": "EPA"},
+        {"name": "DHA"}
+      ]
+    },
+    {
+      "setid": "supp-004",
+      "spl_name": "Magnesium Glycinate 400mg",
+      "labeler": "Doctor's Best",
+      "products": [{"dosage_form": "TABLET"}],
+      "active_ingredients": ["MAGNESIUM GLYCINATE"]
+    },
+    {
+      "setid": "supp-005",
+      "spl_name": "Melatonin 5mg",
+      "labeler": "Natrol",
+      "products": [{"dosage_form": "TABLET"}],
+      "active_ingredients": ["MELATONIN"]
+    },
+    {
+      "setid": "supp-006",
+      "spl_name": "Zinc 50mg",
+      "labeler": "Nature's Bounty",
+      "products": [{"dosage_form": "TABLET"}],
+      "active_ingredients": ["ZINC GLUCONATE"]
+    },
+    {
+      "setid": "supp-007",
+      "spl_name": "Probiotics 50 Billion CFU",
+      "labeler": "Garden of Life",
+      "products": [{"dosage_form": "CAPSULE"}],
+      "active_ingredients": ["LACTOBACILLUS ACIDOPHILUS", "BIFIDOBACTERIUM LACTIS"]
+    },
+    {
+      "setid": "supp-008",
+      "spl_name": "Turmeric Curcumin",
+      "labeler": "Gaia Herbs",
+      "products": [{"dosage_form": "CAPSULE"}],
+      "active_ingredients": ["TURMERIC", "CURCUMIN"]
+    },
+    {
+      "setid": "supp-009",
+      "spl_name": "Iron 65mg",
+      "labeler": "Nature Made",
+      "products": [{"dosage_form": "TABLET"}],
+      "active_ingredients": ["FERROUS SULFATE"]
+    },
+    {
+      "setid": "supp-010",
+      "spl_name": "B-Complex Vitamins",
+      "labeler": "Solgar",
+      "products": [{"dosage_form": "CAPSULE"}],
+      "active_ingredients": ["THIAMINE", "RIBOFLAVIN", "NIACIN", "PYRIDOXINE", "COBALAMIN"]
+    }
+  ]
+}

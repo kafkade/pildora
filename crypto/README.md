@@ -78,6 +78,9 @@ wasm-pack build crypto --target nodejs --features wasm
 node crypto/tests/wasm_node_test.cjs
 ```
 
+> Run from the repository root, or omit `crypto` when running from within the
+> crate directory.
+
 The WASM build uses the same cryptographic implementation as native. Argon2id
 parameters default to 64 MiB memory — use `derive_master_key_with_params` for
 constrained environments. **Different parameters produce different keys;** store
@@ -93,6 +96,6 @@ them with vault metadata.
 
 ## Status
 
-🚧 Foundation complete — native and WASM builds working, test vectors passing
-on both targets. Crypto primitives are tracked in
-[issue #6](https://github.com/kafkade/pildora/issues/6).
+✅ Core implementation complete — all cryptographic primitives, key hierarchy,
+item-level encryption, cross-platform test vectors, and WASM build target are
+implemented and tested (issues #5–#10).

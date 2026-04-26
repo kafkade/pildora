@@ -1,7 +1,7 @@
 # Pildora
 
-> [!IMPORTANT]
-> **This project is in the early planning stage.** There is no working software yet — only documentation, architecture decisions, and a product roadmap. If you're interested in following along or contributing, star the repo and watch for updates.
+> [!NOTE]
+> **Pildora is under active development.** The encryption library and drug data pipeline are functional. App development has not started yet.
 
 **Your health data is yours. We can't see it even if we wanted to.**
 
@@ -69,20 +69,20 @@ Master Password
 
 ## Development
 
-> 🚧 This project is in the planning phase. Development has not started yet.
+> 🚧 Core infrastructure is complete. App development is next.
 
-### Monorepo Structure (Planned)
+### Monorepo Structure
 
 ```text
 pildora/
-├── crypto/          # Shared Rust encryption library (pildora-crypto)
-├── cli/             # CLI tool (Rust, shares crypto crate)
-├── server/          # Sync server (Rust + Axum)
-├── ios/             # iPhone + iPad + Watch app (SwiftUI)
-├── web/             # Web app (Next.js, crypto via WASM)
-├── data/            # Drug data ETL pipeline (Python)
-├── docs/            # Project documentation
-└── .github/         # CI/CD workflows
+├── crypto/          # Shared Rust encryption library ✅
+├── cli/             # CLI tool (Rust) — scaffold only
+├── server/          # Sync server (Rust + Axum) — scaffold only
+├── ios/             # iPhone + iPad + Watch app (SwiftUI) — planned
+├── web/             # Web app (Next.js, crypto via WASM) — planned
+├── data/            # Drug data ETL pipeline (Python) ✅
+├── docs/            # Project documentation ✅
+└── .github/         # CI/CD workflows ✅
 ```
 
 ### Prerequisites
@@ -90,7 +90,7 @@ pildora/
 - Rust (for crypto library, CLI, and sync server)
 - Xcode 16+ (for iOS/iPad/Watch)
 - Node.js 20+ (for web app)
-- Python 3.12+ (for data pipeline)
+- Python 3.11+ (for data pipeline)
 
 ## License
 
