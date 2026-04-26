@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Drug data ETL pipeline (openFDA NDC + DailyMed) with normalized JSONL output
 - SQLite FTS5 search index with concept-based deduplication for drug autocomplete
 - RxNorm REST API integration for drug concept normalization
+- CLI tool with clap v4: `init`, `unlock`, `lock`, `status`, `med`, `dose`, `schedule`, `export`, `recovery-key`, and shell completions (bash, zsh, fish, PowerShell)
+- Encrypted local storage for the CLI using SQLite with zero-knowledge blob storage
+- Vault initialization with master password, Argon2id key derivation, and recovery key generation
+- Vault unlock/lock with session persistence for seamless multi-command workflows
+- Recovery key display and regeneration for account recovery
 
 ### Changed
 

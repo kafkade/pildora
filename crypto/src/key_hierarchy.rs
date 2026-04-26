@@ -159,6 +159,12 @@ impl WrappedItemKey {
 pub struct RecoveryKey([u8; KEY_LEN]);
 
 impl RecoveryKey {
+    /// Creates a recovery key from raw bytes.
+    #[must_use]
+    pub fn from_bytes(bytes: [u8; KEY_LEN]) -> Self {
+        Self(bytes)
+    }
+
     /// Raw bytes of the recovery key.
     #[must_use]
     pub fn as_bytes(&self) -> &[u8; KEY_LEN] {
