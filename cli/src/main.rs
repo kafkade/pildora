@@ -1,11 +1,9 @@
 mod cli;
 mod commands;
-// Models and storage contain types scaffolded for future commands (med, dose,
-// schedule, export). Suppress dead-code warnings until those commands ship.
-#[allow(dead_code)]
+mod context;
 mod models;
+pub mod schedule_engine;
 mod session;
-#[allow(dead_code)]
 mod storage;
 
 use clap::Parser;
@@ -19,7 +17,7 @@ fn main() {
         Commands::Unlock => commands::unlock::run(),
         Commands::Lock => commands::lock::run(),
         Commands::Status => commands::status::run(),
-        Commands::Med(ref cmd) => commands::med::run(cmd),
+        Commands::Med(cmd) => commands::med::run(&cmd),
         Commands::Dose(ref cmd) => commands::dose::run(cmd),
         Commands::Schedule(ref cmd) => commands::schedule::run(cmd),
         Commands::Export { output } => commands::export::run(output),

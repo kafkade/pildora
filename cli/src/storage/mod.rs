@@ -28,6 +28,7 @@ pub enum StorageError {
 // ── Supporting types ─────────────────────────────────────────────────────────
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct AccountState {
     pub salt: Vec<u8>,
     pub argon2_memory_kib: u32,
@@ -39,6 +40,7 @@ pub struct AccountState {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct ItemRow {
     pub id: String,
     pub vault_id: String,
@@ -65,6 +67,7 @@ pub fn default_data_dir() -> PathBuf {
 
 pub struct Storage {
     conn: Connection,
+    #[allow(dead_code)]
     data_dir: PathBuf,
 }
 
@@ -91,6 +94,7 @@ impl Storage {
     }
 
     /// Return the data directory this storage was opened with.
+    #[allow(dead_code)]
     pub fn data_dir(&self) -> &Path {
         &self.data_dir
     }
@@ -268,6 +272,7 @@ impl Storage {
     }
 
     /// Get encrypted vault metadata.
+    #[allow(dead_code)]
     pub fn get_vault_metadata(&self, vault_id: &str) -> Result<Vec<u8>, StorageError> {
         self.conn
             .query_row(
