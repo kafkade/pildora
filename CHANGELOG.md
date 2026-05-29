@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Roadmap updated to reflect ADR decisions: libsodium → `pildora-crypto` (RustCrypto), MIT open-core → AGPL-3.0, TypeScript/Hono → Rust+Axum, cbindgen → UniFFI (17 sections reconciled)
+
 ### Added
 
+- `pildora-crypto-ffi` crate: UniFFI bindings exposing `pildora-crypto` to Swift via FFI (ADR-007)
+- iOS FFI spike: prototype Swift app validating Rust → Swift FFI bridge with encrypt/decrypt roundtrip and benchmarks
+- ADR-007: Rust-to-Swift FFI Bridge — documents UniFFI choice, XCFramework build process, and security considerations
+- `build-xcframework.sh` script for cross-compiling Rust to Apple targets and packaging as XCFramework
 - Cargo workspace with three crates: `pildora-crypto` (library), `pildora-cli` (binary), `pildora-server` (binary)
 - `pildora-crypto` foundation: error types, symmetric key type with zeroize-on-drop, vault module stub
 - `rustfmt.toml` and `clippy.toml` with project-wide conventions (edition 2024, `unsafe` denied, pedantic warnings)
