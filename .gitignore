@@ -53,6 +53,10 @@ target/
 *.ipa
 *.dSYM.zip
 *.dSYM
+*.xcframework/
+
+# UniFFI generated bindings (produced by build-xcframework.sh)
+ios/ffi-spike/generated/
 
 # Executables
 *.exe

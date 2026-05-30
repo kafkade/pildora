@@ -1,0 +1,43 @@
+[package]
+name = "pildora-crypto-ffi"
+description = "UniFFI bindings for pildora-crypto — Rust → Swift/Kotlin FFI bridge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "staticlib", "lib"]
+name = "pildora_crypto_ffi"
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+required-features = ["bindgen"]
+
+# Override workspace lints: UniFFI-generated scaffolding requires unsafe for
+# extern "C" FFI glue. This is the *only* crate in the workspace that permits
+# unsafe code, and it is limited to machine-generated UniFFI plumbing.
+[lints.rust]
+unsafe_code = "allow"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Allow common pedantic false positives (mirrored from workspace)
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[features]
+default = []
+bindgen = ["uniffi/cli"]
+
+[dependencies]
+pildora-crypto = { path = "../crypto" }
+thiserror = "2"
+uniffi = { version = "0.29" }
+
+[dev-dependencies]

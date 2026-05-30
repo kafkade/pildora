@@ -12,3 +12,4 @@ Format follows [Michael Nygard's ADR template](https://cognitect.com/blog/2011/1
 | [003](003-notification-architecture.md) | Notification Architecture | Accepted | 2026-04-24 |
 | [004](004-data-sync-protocol.md) | Data Sync Protocol | Accepted | 2026-04-24 |
 | [005](005-open-source-strategy.md) | Open Source Strategy | Accepted | 2026-04-24 |
+| [007](007-rust-swift-ffi-bridge.md) | Rust-to-Swift FFI Bridge | Accepted | 2026-05-29 |
