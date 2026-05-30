@@ -154,7 +154,7 @@ open Package.swift
 | 13 | Double tap on Snooze | Snooze options appear |
 | 14 | Swipe right | "Snooze [Name] for 5 minutes" |
 
-3. Verify VoiceOver rotor shows headings: "Needs Attention", "Upcoming", "Completed"
+1. Verify VoiceOver rotor shows headings: "Needs Attention", "Upcoming", "Completed"
 
 ### Test 3: Accessibility Inspector
 

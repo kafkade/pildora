@@ -105,7 +105,7 @@ This runs all CRUD operations and benchmarks against plain SQLite. Encryption te
 
 SQLCipher requires linking against the SQLCipher library instead of system SQLite. The recommended approaches:
 
-**Option A: Xcode project with CocoaPods**
+#### Option A: Xcode project with CocoaPods
 
 ```ruby
 # Podfile
@@ -113,7 +113,7 @@ pod 'GRDB.swift/SQLCipher'
 pod 'SQLCipher', '~> 4.6'
 ```
 
-**Option B: SPM with community SQLCipher wrapper**
+#### Option B: SPM with community SQLCipher wrapper
 
 Add to `Package.swift`:
 
@@ -129,7 +129,7 @@ swiftSettings: [
 ]
 ```
 
-**Option C: Custom SQLCipher build**
+#### Option C: Custom SQLCipher build
 
 Build SQLCipher from source and link manually. See [SQLCipher build docs](https://www.zetetic.net/sqlcipher/ios-tutorial/).
 
