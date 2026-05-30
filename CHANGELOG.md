@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed
-
-- Roadmap updated to reflect ADR decisions: libsodium → `pildora-crypto` (RustCrypto), MIT open-core → AGPL-3.0, TypeScript/Hono → Rust+Axum, cbindgen → UniFFI (17 sections reconciled)
-
 ### Added
 
 - `pildora-crypto-ffi` crate: UniFFI bindings exposing `pildora-crypto` to Swift via FFI (ADR-007)
@@ -50,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Roadmap updated to reflect ADR decisions: libsodium → `pildora-crypto` (RustCrypto), MIT open-core → AGPL-3.0, TypeScript/Hono → Rust+Axum, cbindgen → UniFFI (17 sections reconciled)
 - Sync server language from Go to Rust + Axum across all documentation
 - Crypto implementation decision: RustCrypto crates over libsodium bindings (updated ADR-001)
 - `.gitignore` now commits `Cargo.lock` (workspace with binaries needs reproducible builds)
