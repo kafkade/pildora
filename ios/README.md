@@ -33,11 +33,16 @@ core crypto crate to preserve the `unsafe_code = "deny"` invariant.
 ## Dependencies
 
 - `pildora-crypto` (Rust via UniFFI FFI) — encryption operations
+- GRDB.swift + SQLCipher — on-device encrypted storage (see [`sqlcipher-spike/`](sqlcipher-spike/))
 - HealthKit — Apple Health integration
-- Local SQLite — on-device encrypted storage
 
 ## Status
 
-🚧 Not yet implemented. The FFI bridge has been validated in a
-[technical spike](ffi-spike/) (see issue #21). Requires completion of
-`pildora-crypto` (Phase 0) before app development begins.
+🚧 Not yet implemented. Four technical spikes have been validated:
+
+- **FFI bridge** ([`ffi-spike/`](ffi-spike/), issue #21) — Rust→Swift via UniFFI
+- **SQLCipher storage** ([`sqlcipher-spike/`](sqlcipher-spike/), issue #22) — GRDB.swift + encrypted SQLite
+- **Notification rotation** ([`notification-spike/`](notification-spike/), issue #23) — 64-limit rotation strategy with priority-based scheduling
+- **Accessibility baseline** ([`accessibility-spike/`](accessibility-spike/), issue #24) — SwiftUI + VoiceOver + Dynamic Type prototype
+
+Requires completion of `pildora-crypto` (Phase 0) before app development begins.
