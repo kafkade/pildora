@@ -96,11 +96,11 @@ pub fn run() {
 }
 
 fn prompt_password_with_confirm() -> String {
-    let pass = rpassword::prompt_password_stderr("Master password: ").unwrap_or_else(|e| {
+    let pass = rpassword::prompt_password("Master password: ").unwrap_or_else(|e| {
         eprintln!("{} Failed to read password: {e}", "✗".red());
         process::exit(1);
     });
-    let confirm = rpassword::prompt_password_stderr("Confirm password: ").unwrap_or_else(|e| {
+    let confirm = rpassword::prompt_password("Confirm password: ").unwrap_or_else(|e| {
         eprintln!("{} Failed to read password: {e}", "✗".red());
         process::exit(1);
     });
