@@ -31,7 +31,7 @@ pub fn run() {
         return;
     }
 
-    let password = rpassword::prompt_password_stderr("Master password: ").unwrap_or_else(|e| {
+    let password = rpassword::prompt_password("Master password: ").unwrap_or_else(|e| {
         eprintln!("{} Failed to read password: {e}", "✗".red());
         process::exit(1);
     });

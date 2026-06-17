@@ -30,7 +30,7 @@ All subsequent sections use these defaults. Where a default proves wrong, the **
 | 16 | Self-hosted sync option | **Later (Phase 5+), not MVP** | Bitwarden model is compelling but adds ops burden; prioritize managed infrastructure first | If power users demand self-hosting early, publish a Docker image with the sync server |
 | 17 | Drug reference data handling | **Locally bundled index (compressed) + periodic on-device updates** | Avoids leaking drug search queries to any server; openFDA data is ~150MB compressed for US drugs; supplements require a separate, smaller index | If index is too large for app bundle, use a CDN-served encrypted index file downloaded on first launch |
 | 18 | Native Swift vs. cross-platform | **Native Swift/SwiftUI** for iOS/iPad/Watch | Apple-heavy platform list makes native the right call; SwiftUI shares code across iPhone/iPad/Watch; cross-platform (React Native/Flutter) would require native modules for HealthKit, Keychain, and Watch anyway | If web-first is chosen instead, use React/Next.js with WebCrypto API and accept no Watch/HealthKit at MVP |
-| 19 | Backend language | **TypeScript (Node.js) with Hono or Fastify** | Shares language with web app and CLI; strong crypto library ecosystem (libsodium via sodium-native); familiar to most developers; deploy on Cloudflare Workers or Railway | If the developer prefers Rust or Go, either works — but TypeScript maximizes code sharing |
+| 19 | Backend language | **Rust with Axum** | Shares the crypto crate directly with `pildora-crypto`; single language for server + crypto + CLI; deploy on any Linux host or container. See ADR-006. | ~~If the developer prefers Rust or Go, either works~~ *Superseded — ADR-006 decided Rust+Axum.* |
 | 20 | CLI tool positioning | **Power-user utility** (not first-class consumer product) | Primary acquisition is App Store; CLI serves developers, data importers, and automation users | If CLI gains traction, promote to first-class with brew/npm distribution in Phase 4 |
 
 ---
@@ -276,7 +276,7 @@ Implement a **time-delayed emergency access** model (similar to Bitwarden):
 - If the user loses their master password AND printed recovery key, their data is **permanently unrecoverable**. This is a feature, not a bug. The app communicates this clearly during onboarding.
 - Metadata (see Section 2.5) is not protected by E2E encryption. The operator can see *that* you use the app and *when* you sync, but not *what* medications you take.
 
-**Auditability:** The encryption layer (crypto primitives, key derivation, vault protocol) will be **open-sourced** under MIT license as a standalone library, even if the application code is not fully open source. This enables third-party security audits and community review. Target: publish before Phase 2 (cloud sync) ships.
+**Auditability:** The encryption layer (crypto primitives, key derivation, vault protocol) is **open-sourced** under AGPL-3.0 as the `pildora-crypto` crate (see ADR-005). The entire project uses AGPL-3.0. This enables third-party security audits and community review. Target: publish before Phase 2 (cloud sync) ships.
 
 ### 2.7 — Liability & Disclaimers
 
@@ -612,7 +612,7 @@ This is the **only architecture that maintains full zero-knowledge guarantees** 
 | **Crypto Library** | **Rust** (`pildora-crypto`), compiled to native (FFI) + WASM | Single implementation = single audit target. Shared by CLI, server (as crate), iOS (via FFI), and web (via WASM). See ADR-001. |
 | **CLI Tool** | **Rust + clap**, shares `pildora-crypto` crate directly | Same language as crypto — no FFI bridge needed. clap for CLI parsing, ratatui for optional TUI. Distributed via GitHub Releases and cargo install. |
 | **Backend API / Sync Server** | **Rust + Axum**, deployed as a single static binary | Replaces the original Go recommendation. Shares crypto crate directly for SRP-6a auth. Thin server — stores/retrieves encrypted blobs only. Deploy on Fly.io, Railway, Docker, or bare metal. |
-| **iOS / iPad App** | **Native Swift/SwiftUI**, minimum iOS 17 | Non-negotiable for HealthKit, Keychain, Secure Enclave, Watch, and local notifications. pildora-crypto bridged via FFI (UniFFI or cbindgen). |
+| **iOS / iPad App** | **Native Swift/SwiftUI**, minimum iOS 17 | Non-negotiable for HealthKit, Keychain, Secure Enclave, Watch, and local notifications. pildora-crypto bridged via FFI (UniFFI — see ADR-007). |
 | **watchOS App** | **Companion app (shared Swift package)**, watchOS 10+ | Share data model and crypto layer via Swift Package; complications for next dose; haptic dose confirmation |
 | **Website / Web App** | **Next.js (App Router) + React + TypeScript**, pildora-crypto via WASM | SSR for marketing/SEO pages, SPA for dashboard. Crypto operations run in Rust WASM — no JS crypto reimplementation. Rust WASM UI frameworks (Leptos, Yew) were evaluated and rejected for maturity reasons (see ADR-006). |
 | **Database** | **SQLite (on-device)** for encrypted blob storage; **PostgreSQL or SQLite** (server-side) for encrypted blob metadata | On-device: plain SQLite storing pre-encrypted blobs (CLI) or SQLCipher (iOS). Server: Axum + SQLx with PostgreSQL or SQLite. |
@@ -623,7 +623,7 @@ This is the **only architecture that maintains full zero-knowledge guarantees** 
 | **CI/CD** | **GitHub Actions** | Matrix builds for Rust (Linux, macOS, Windows), iOS/Watch (Xcode on macOS runners), web (Node), data pipeline (Python). Fastlane for iOS builds and TestFlight distribution. |
 | **Monitoring** | **Sentry (self-hosted or cloud with PII scrubbing)** for crash reporting; **no analytics SDK** | Sentry can be configured to strip PII; no third-party analytics (Mixpanel, Amplitude, etc.) — those require user data the project refuses to collect |
 
-**Cross-platform crypto parity:** Use a **single shared Rust library** (`pildora-crypto`) as the crypto implementation across all platforms. Swift accesses it via FFI (UniFFI or cbindgen), the web app via WASM (wasm-bindgen), and the CLI + server import it as a Cargo workspace crate. One implementation = one audit target = zero divergence risk. This supersedes the earlier recommendation to use per-platform libsodium bindings.
+**Cross-platform crypto parity:** Use a **single shared Rust library** (`pildora-crypto`) as the crypto implementation across all platforms. Swift accesses it via FFI (UniFFI — see ADR-007), the web app via WASM (wasm-bindgen), and the CLI + server import it as a Cargo workspace crate. One implementation = one audit target = zero divergence risk. This supersedes the earlier recommendation to use per-platform libsodium bindings. See ADR-006 for the shared-library decision.
 
 **Open-source crypto module:** The `pildora-crypto` crate is the auditable encryption module. Published with cross-platform test vectors that Swift FFI and WASM builds validate against.
 
@@ -862,11 +862,11 @@ medtrack status              # Encryption status, sync status, vault info
 | Model | Pros | Cons | Recommendation |
 |---|---|---|---|
 | Fully open source | Maximum trust; community contributions; security audits | Revenue challenge; competitors fork freely | Not recommended for full product |
-| **Open core** | Trust where it matters (crypto layer); protectable app IP; community audits crypto | Dual licensing complexity | **Recommended** |
+| **Open core** | ~~Trust where it matters (crypto layer); protectable app IP; community audits crypto~~ | ~~Dual licensing complexity~~ | ~~**Recommended**~~ *Superseded by ADR-005 — fully AGPL-3.0* |
 | Source-available | Transparency without forking risk | Community may not contribute; license confusion | Acceptable alternative |
 | Closed source | Full IP control | Less trust; harder to prove privacy claims | Undermines the zero-knowledge story |
 
-**Recommendation: Open Core.** Open-source the encryption/vault protocol library (MIT license). Keep the application code (iOS app, web app, backend) as proprietary source-available (visible on GitHub, not OSS-licensed). This lets anyone audit the crypto (building trust), while protecting the product investment.
+**~~Recommendation: Open Core.~~** *Superseded by ADR-005.* The project uses **AGPL-3.0 for all components** (crypto library, iOS app, web app, server, CLI, data pipeline). This maximizes trust and auditability while ensuring all derivative works remain open. The AGPL-3.0 license was chosen over open-core/MIT because it aligns with the zero-knowledge privacy commitment — users can verify the entire stack, not just the crypto layer.
 
 ### 12.2 — Revenue Model: Freemium Subscription
 
@@ -905,8 +905,8 @@ medtrack status              # Encryption status, sync status, vault info
 
 **Deliverables:**
 
-- Monorepo setup (Swift Package Manager + pnpm workspaces)
-- E2E encryption library: key derivation (Argon2id), vault key management, item encryption/decryption (AES-256-GCM), using libsodium
+- Monorepo setup (Cargo workspace for Rust components + Swift Package Manager for Apple targets)
+- E2E encryption library: key derivation (Argon2id), vault key management, item encryption/decryption (AES-256-GCM), using `pildora-crypto` (shared Rust library with RustCrypto crates — see ADR-001, ADR-006)
 - SQLCipher integration for on-device encrypted storage
 - SRP-6a authentication protocol implementation (for Phase 2, but design now)
 - Data model implementation (Vault, Medication, Schedule, DoseLog entities)
@@ -979,7 +979,7 @@ medtrack status              # Encryption status, sync status, vault info
 
 **Deliverables:**
 
-- Backend API (Hono on Cloudflare Workers) with encrypted blob storage (D1 + R2)
+- Backend API (Rust + Axum — see ADR-006) with encrypted blob storage
 - SRP-6a authentication (zero-knowledge login)
 - Vault sync protocol: upload/download encrypted items with version tracking
 - Conflict resolution (LWW at item level with client-side merge UI)
@@ -992,7 +992,7 @@ medtrack status              # Encryption status, sync status, vault info
 **Risks:**
 
 - Sync conflict edge cases with encrypted data are hard to test. **Mitigation:** Extensive integration tests with simulated multi-device scenarios.
-- Cloudflare D1 is relatively new. **Mitigation:** D1 is production-ready for this scale [Validated]; fallback to Turso or PlanetScale if issues arise.
+- Server deployment and database performance. **Mitigation:** Standard Postgres/SQLite on conventional infrastructure; mature ecosystem. Fallback options well understood.
 
 **Cut line:** Conflict merge UI can be simplified to "latest wins" with notification of overwritten changes.
 
@@ -1158,10 +1158,10 @@ medtrack status              # Encryption status, sync status, vault info
 
 | # | Spike | Success Criteria | Effort | Risk if Fails |
 |---|---|---|---|---|
-| 1 | **E2E encryption roundtrip** | Encrypt a Medication entity with libsodium (swift-sodium), store in SQLCipher, retrieve and decrypt. < 10ms per operation. | S | Architecture is blocked — must succeed |
+| 1 | **E2E encryption roundtrip** | Encrypt a Medication entity with `pildora-crypto` (via UniFFI FFI bridge), store in SQLCipher, retrieve and decrypt. < 10ms per operation. | S | Architecture is blocked — must succeed |
 | 2 | **Local notification stress test** | Schedule 64 notifications for 10 medications with 3 daily doses. Verify delivery accuracy over 48 hours on a physical device. | S | Notification rotation strategy required if limits are hit |
 | 3 | **Drug index build** | ETL openFDA NDC + DailyMed + RxNorm into SQLite FTS5 index. Measure: final size (target < 150MB), search latency (target < 50ms for autocomplete). | M | If index is too large, implement tiered loading (core drugs bundled, full index downloaded) |
-| 4 | **SRP-6a proof of concept** | Implement SRP-6a handshake between a Swift client and TypeScript server. Verify zero-knowledge property (server never sees password). | M | If SRP proves too complex, fall back to standard password auth with server-side Argon2 — but this weakens the zero-knowledge story |
+| 4 | **SRP-6a proof of concept** | Implement SRP-6a handshake between a Swift client and Rust server (Axum). Verify zero-knowledge property (server never sees password). | M | If SRP proves too complex, fall back to standard password auth with server-side Argon2 — but this weakens the zero-knowledge story |
 | 5 | **SwiftUI accessibility audit** | Build a prototype medication list + dose confirmation screen with Dynamic Type (xxxLarge) and VoiceOver. Verify all interactive elements are accessible. | S | UI architecture may need adjustment for accessibility |
 
 ### 14.2 — First 10 Epics
@@ -1169,7 +1169,7 @@ medtrack status              # Encryption status, sync status, vault info
 | # | Epic | Acceptance Criteria | Effort | Dependencies | Risk |
 |---|---|---|---|---|---|
 | 1 | **Project bootstrap & CI/CD** | Monorepo created, Xcode project builds, GitHub Actions runs tests on push, Fastlane configured for TestFlight | M | None | Low |
-| 2 | **Encryption library** | libsodium integrated; Vault create/unlock, item encrypt/decrypt functions pass unit tests with test vectors | L | None | Medium — crypto code must be correct |
+| 2 | **Encryption library** | `pildora-crypto` integrated via UniFFI FFI bridge; Vault create/unlock, item encrypt/decrypt functions pass unit tests with test vectors | L | None | Medium — crypto code must be correct |
 | 3 | **SQLCipher data layer** | Encrypted local database stores and retrieves Medication, Schedule, DoseLog entities; migration framework in place | M | Epic 2 | Low |
 | 4 | **Drug index pipeline** | Python ETL produces SQLite FTS5 index from openFDA + RxNorm; index is < 150MB; search returns results in < 50ms | M | None (parallel) | Medium |
 | 5 | **Medication CRUD** | Add, edit, delete medications with name autocomplete from local index; data persists encrypted across app restarts | L | Epics 2, 3, 4 | Low |
@@ -1198,11 +1198,11 @@ medtrack status              # Encryption status, sync status, vault info
 
 | ADR | Title | Decision Scope | Decide By |
 |---|---|---|---|
-| ADR-001 | **Encryption Architecture** | Key hierarchy (master to vault to item), primitives (AES-256-GCM, X25519, Argon2id), libsodium as library, key storage per platform | Week 2 |
+| ADR-001 | **Encryption Architecture** | Key hierarchy (master to vault to item), primitives (AES-256-GCM, X25519, Argon2id), RustCrypto crates via `pildora-crypto`, key storage per platform | Week 2 |
 | ADR-002 | **MVP Platform Choice** | iOS-first with native SwiftUI. Justification: HealthKit, Keychain, Watch integration, App Store distribution. | Week 1 |
 | ADR-003 | **Notification Architecture** | Local notifications only for MVP. Opaque server timers for Phase 2+ if needed. No email/SMS. | Week 3 |
 | ADR-004 | **Data Sync Protocol** | Item-level encrypted blob sync with LWW conflict resolution. Server stores opaque blobs + version counters. | Week 4 |
-| ADR-005 | **Open Source Strategy** | Open core: MIT-licensed encryption/vault protocol library; proprietary application code (source-available). | Week 6 |
+| ADR-005 | **Open Source Strategy** | Fully AGPL-3.0 for all components (crypto library, applications, server). | Week 6 |
 
 ---
 
@@ -1239,15 +1239,15 @@ Phase 0: Encryption Library --> Phase 1: Core MVP --> Phase 2: Cloud Sync --> Ph
 ### Platform Dependencies
 
 `
-SharedKit (Swift Package: data model, crypto, schedule engine)
+SharedKit (Swift Package: data model, crypto FFI bridge, schedule engine)
     +-- iOS App (depends on SharedKit)
     +-- iPad App (depends on SharedKit)
     +-- Watch App (depends on SharedKit)
-    (No dependency on web/CLI — those use JS crypto)
+    (No dependency on web/CLI — those use WASM crypto)
 
 Crypto Protocol Spec (documentation + test vectors)
-    +-- swift-sodium implementation (SharedKit)
-    +-- libsodium.js implementation (web + CLI)
+    +-- pildora-crypto-ffi / UniFFI implementation (SharedKit)
+    +-- pildora-crypto WASM implementation (web)
     +-- Cross-platform test vectors (verify parity)
 `
 
@@ -1266,7 +1266,7 @@ Crypto Protocol Spec (documentation + test vectors)
 |---|---|---|---|---|
 | **Notifications under E2E** | Local notifications only (iOS UNUserNotificationCenter) | Opaque server timers (fire every 15 min, client checks if dose is due) | Timing pattern visible to operator — reveals that the user has medications scheduled | **Start with local only.** Compromise only if iOS 64-notification limit proves insufficient for power users with 15+ meds. |
 | **Drug autocomplete without leaking queries** | Bundled local SQLite FTS5 index (~80-120MB) | k-anonymity batch queries (send query prefix + 99 random prefixes) | Partial query exposure — server sees the query mixed with noise | **Bundled local index.** The size cost is acceptable for modern devices. |
-| **Cross-platform crypto parity** | Shared Rust library compiled to native (Swift FFI) + WASM (web) + napi (CLI) | Per-platform libsodium bindings (swift-sodium, libsodium.js, sodium-native) | No privacy impact — risk is implementation divergence causing bugs | **Per-platform libsodium.** Shared Rust adds build complexity a solo dev cannot maintain. Mitigate divergence risk with shared test vectors. |
+| **Cross-platform crypto parity** | Shared Rust library compiled to native (Swift FFI) + WASM (web) + napi (CLI) | ~~Per-platform libsodium bindings (swift-sodium, libsodium.js, sodium-native)~~ | No privacy impact — risk is implementation divergence causing bugs | **Shared Rust library (`pildora-crypto`).** ADR-006 decided shared Rust over per-platform libsodium. UniFFI FFI bridge validated in ADR-007 spike. One implementation = one audit target. |
 | **OCR on web/CLI** | On-device OCR for all platforms | OCR available on iOS/iPad only (Apple Vision); not available on web/CLI | None (feature absent on web/CLI) | **iOS/iPad only.** Do not implement cloud OCR — it breaks zero-knowledge. Web/CLI users import via CSV/JSON. |
 | **Vault sharing revocation** | Re-key entire vault (new VK, re-encrypt all items) | Revoke forward access only (change VK for new items, old items remain accessible to revoked user with old key) | **High** — revoked user retains access to historical data | **Full re-key.** The privacy cost of the compromise is unacceptable. Performance cost of re-keying is manageable (lazy re-encryption). |
 | **On-device health correlation** | Core ML model for trend detection | Simple rolling average comparison (no ML) | None (both are on-device) | **Simple statistics first.** Core ML adds complexity without proportional user value in early phases. |
@@ -1279,13 +1279,13 @@ Crypto Protocol Spec (documentation + test vectors)
 |---|---|---|---|---|
 | 1 | Native vs. cross-platform iOS | SwiftUI / React Native / Flutter | **SwiftUI** — best HealthKit, Keychain, Watch, widget integration | Decided (ADR-002) |
 | 2 | Notification architecture | Local-only / Opaque timers / Encrypted push | **Local-only for MVP**, opaque timers for Phase 2+ if needed | Decided (ADR-003) |
-| 3 | Open source strategy | Fully open / Open core / Source-available / Closed | **Open core** — MIT crypto library, proprietary app | Decided (ADR-005) |
+| 3 | Open source strategy | Fully open / Open core / Source-available / Closed | **Fully AGPL-3.0** for all components | Decided (ADR-005) |
 | 4 | Self-hosted sync option | Yes / No / Later | **Later (Phase 8)** — Docker image for power users after managed service is stable | Decided |
 | 5 | Key recovery mechanism | Recovery key / iCloud Keychain / Social recovery | **Printed recovery key** (1Password Emergency Kit model) + optional iCloud Keychain backup for device unlock key | Decided (ADR-001) |
 | 6 | Monetization model | Freemium / Subscription / Donations / Hybrid | **Freemium subscription** — free local-only tier, paid sync + multi-vault | Decided |
 | 7 | Vault sharing key management | Asymmetric wrapping / Key escrow / Link-based | **Asymmetric wrapping** (X25519) — vault key encrypted to recipient's public key | Decided (ADR-001) |
 | 8 | Drug autocomplete privacy | Local index / k-anonymity / Accept leakage | **Local bundled index** — no server queries | Decided |
-| 9 | Cross-platform crypto library | Shared Rust/WASM / Per-platform native | **Per-platform libsodium** with shared test vectors | Decided |
+| 9 | Cross-platform crypto library | Shared Rust/WASM / Per-platform native | **Shared Rust library** (`pildora-crypto`) via UniFFI (native) + WASM (web) | Decided (ADR-006, ADR-007) |
 | 10 | Doctor/temporary access model | Export PDF / Time-limited link / QR code | **On-device PDF export** ("Doctor Mode") — zero server involvement | Decided |
 | 11 | Interaction warning CDS classification | Ship with disclaimers / Wait for legal review / Don't ship | **Ship after legal review** — schedule review during Phase 2, resolve before Phase 3 ships | Open `[Validation Required]` |
 | 12 | COPPA applicability for child vaults | Full COPPA compliance / Argue exemption / Age-gate children out | **Consult attorney** — encrypted child data on a zero-knowledge server is a novel COPPA question | Open `[Validation Required]` |
@@ -1297,7 +1297,7 @@ Crypto Protocol Spec (documentation + test vectors)
 
 | # | Failure Mode | Likelihood | Impact | Mitigation Already in Plan? | Additional Mitigation |
 |---|---|---|---|---|---|
-| 1 | **E2E encryption complexity delays MVP by 3+ months** | Medium (35%) | Critical — blocks all features | Phase 0 spikes de-risk crypto early; libsodium is battle-tested | Hire a contract cryptographer for 2 weeks if stuck on key hierarchy implementation. Keep MVP local-only to avoid sync complexity. |
+| 1 | **E2E encryption complexity delays MVP by 3+ months** | Medium (35%) | Critical — blocks all features | Phase 0 spikes de-risk crypto early; `pildora-crypto` uses battle-tested RustCrypto crates (ADR-001) | Hire a contract cryptographer for 2 weeks if stuck on key hierarchy implementation. Keep MVP local-only to avoid sync complexity. |
 | 2 | **Drug/supplement data sources are too expensive or unavailable** | Medium (30%) | High — interaction checking is a key differentiator | MVP uses free sources (openFDA, RxNorm); licensing inquiry starts in parallel | Ship MVP without interaction checking if databases are unavailable. Curate a small, high-quality interaction set manually from public literature. Revisit licensing post-revenue. |
 | 3 | **No user acquisition — privacy positioning is too niche** | Medium (40%) | Critical — no users means no product | Content marketing, ASO, Reddit/HN targeting in plan | Validate positioning with a landing page and waitlist before MVP ships. If privacy messaging doesn't resonate, pivot messaging to "the most complete medication tracker" with privacy as a secondary differentiator. |
 | 4 | **Regulatory challenge blocks key features** | Low (15%) | High — interaction checking or health correlation features could be blocked | Legal review gates in roadmap; disclaimers on all features; non-goals exclude dosing recommendations | If interaction checking is classified as CDS, redesign as "drug information lookup" (user searches for interactions manually) rather than proactive warnings. Removes CDS trigger while preserving user value. |

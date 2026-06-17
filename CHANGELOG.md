@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `pildora-crypto-ffi` crate: UniFFI bindings exposing `pildora-crypto` to Swift via FFI (ADR-007)
+- iOS FFI spike: prototype Swift app validating Rust → Swift FFI bridge with encrypt/decrypt roundtrip and benchmarks
+- iOS SQLCipher spike: GRDB.swift integration with encrypted storage, 4-table data model, CRUD benchmarks, and vault-per-database architecture
+- iOS notification spike: 64-notification rotation algorithm with priority-based scheduling, rolling window replenishment, and 6-scenario simulation
+- iOS accessibility spike: SwiftUI prototype of medication list and dose confirmation with Dynamic Type, VoiceOver, 44pt tap targets, and programmatic audit
+- ADR-007: Rust-to-Swift FFI Bridge — documents UniFFI choice, XCFramework build process, and security considerations
+- `build-xcframework.sh` script for cross-compiling Rust to Apple targets and packaging as XCFramework
 - Cargo workspace with three crates: `pildora-crypto` (library), `pildora-cli` (binary), `pildora-server` (binary)
 - `pildora-crypto` foundation: error types, symmetric key type with zeroize-on-drop, vault module stub
 - `rustfmt.toml` and `clippy.toml` with project-wide conventions (edition 2024, `unsafe` denied, pedantic warnings)
@@ -42,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Roadmap updated to reflect ADR decisions: libsodium → `pildora-crypto` (RustCrypto), MIT open-core → AGPL-3.0, TypeScript/Hono → Rust+Axum, cbindgen → UniFFI (17 sections reconciled)
 - Sync server language from Go to Rust + Axum across all documentation
 - Crypto implementation decision: RustCrypto crates over libsodium bindings (updated ADR-001)
 - `.gitignore` now commits `Cargo.lock` (workspace with binaries needs reproducible builds)

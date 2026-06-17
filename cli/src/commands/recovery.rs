@@ -88,8 +88,8 @@ fn run_regenerate(store: &Storage, mek: &MasterEncryptionKey) {
     println!("  If you have written it down, destroy the old copy.");
     println!();
 
-    let confirm = rpassword::prompt_password_stderr("Type 'REGENERATE' to confirm: ")
-        .unwrap_or_else(|e| {
+    let confirm =
+        rpassword::prompt_password("Type 'REGENERATE' to confirm: ").unwrap_or_else(|e| {
             eprintln!("{} Failed to read input: {e}", "✗".red());
             process::exit(1);
         });
