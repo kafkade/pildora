@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- iOS Today view feature (`ios/today-view/`): chronological dose sections (morning/afternoon/evening/bedtime), dose states (upcoming/due now/overdue/taken/skipped/snoozed), one-tap confirmation with haptic feedback, swipe actions (taken/skip/snooze), PRN quick logging, and VoiceOver/Dynamic Type support.
 - iOS medication list feature (`ios/medication-list/`): SwiftUI package with a searchable, category-grouped medication list, drug reference display (class, side effects, source + date attribution, informational-only disclaimer), manual inventory tracking with user-configurable low-stock thresholds and local refill reminders, a profile/settings screen, and on-device data export (decrypted JSON + Doctor Mode PDF). Self-contained against an in-memory sample store pending the data layer (#44), CRUD (#48), and design system (#43).
 - `pildora-crypto-ffi` crate: UniFFI bindings exposing `pildora-crypto` to Swift via FFI (ADR-007)
 - iOS FFI spike: prototype Swift app validating Rust → Swift FFI bridge with encrypt/decrypt roundtrip and benchmarks
