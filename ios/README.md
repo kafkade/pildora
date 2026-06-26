@@ -38,11 +38,14 @@ core crypto crate to preserve the `unsafe_code = "deny"` invariant.
 
 ## Status
 
-🚧 Not yet implemented. Four technical spikes have been validated:
+🚧 Not yet implemented as a shipping app. Four technical spikes have been
+validated, and the first Phase 1 feature slice has been built as a
+standalone SwiftUI package:
 
 - **FFI bridge** ([`ffi-spike/`](ffi-spike/), issue #21) — Rust→Swift via UniFFI
 - **SQLCipher storage** ([`sqlcipher-spike/`](sqlcipher-spike/), issue #22) — GRDB.swift + encrypted SQLite
 - **Notification rotation** ([`notification-spike/`](notification-spike/), issue #23) — 64-limit rotation strategy with priority-based scheduling
 - **Accessibility baseline** ([`accessibility-spike/`](accessibility-spike/), issue #24) — SwiftUI + VoiceOver + Dynamic Type prototype
+- **Medication list + inventory** ([`medication-list/`](medication-list/PildoraMedicationList/), issue #50) — medication list with search, drug reference display, manual inventory tracking with low-stock / refill reminders, and profile + JSON/PDF export. Self-contained against an in-memory sample store until the data layer (#44), CRUD (#48), and design system (#43) land.
 
 Requires completion of `pildora-crypto` (Phase 0) before app development begins.
