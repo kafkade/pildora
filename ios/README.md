@@ -48,5 +48,6 @@ standalone SwiftUI package:
 - **Accessibility baseline** ([`accessibility-spike/`](accessibility-spike/), issue #24) — SwiftUI + VoiceOver + Dynamic Type prototype
 - **Medication list + inventory** ([`medication-list/`](medication-list/PildoraMedicationList/), issue #50) — medication list with search, drug reference display, manual inventory tracking with low-stock / refill reminders, and profile + JSON/PDF export. Self-contained against an in-memory sample store until the data layer (#44), CRUD (#48), and design system (#43) land.
 - **Today view + dose confirmation** ([`today-view/`](today-view/PildoraTodayView/), issue #47) — chronological Today timeline with one-tap dose confirmation, swipe actions (taken/skip/snooze), PRN quick logging, and VoiceOver/Dynamic Type support. Self-contained against an in-memory sample store until schedule engine and persistence wiring land.
+- **Secure memory wrapper** ([`secure-memory/`](secure-memory/PildoraSecureMemory/), issue #40) — `SecureBytes`, a move-only (`~Copyable`) type that zeroizes key material on release, resolving the Swift memory-zeroization hardening item from ADR-007. Pure Swift library; builds and tests with `swift test`.
 
 Requires completion of `pildora-crypto` (Phase 0) before app development begins.

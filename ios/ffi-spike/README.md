@@ -69,7 +69,10 @@ This spike proves the FFI bridge works. Before production use:
 
 - **Swift memory zeroization**: `Data` and `[UInt8]` in Swift are not
   guaranteed to be zeroized on deallocation. Sensitive key material should be
-  wrapped in a Swift type that explicitly clears memory on `deinit`.
+  wrapped in a Swift type that explicitly clears memory on `deinit`. ✅
+  Resolved by the [`secure-memory/`](../secure-memory/PildoraSecureMemory/)
+  package (`SecureBytes`, issue #40), which also documents exactly which FFI
+  calls return sensitive material.
 - **Xcode build phase**: Replace the standalone build script with an Xcode Run
   Script build phase that cross-compiles Rust as part of the normal build.
 - **CI**: Add a macOS CI job that validates FFI compilation and binding

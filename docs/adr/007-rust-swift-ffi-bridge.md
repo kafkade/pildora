@@ -151,6 +151,14 @@ This is acceptable for the initial implementation since iOS provides hardware
 memory encryption (Secure Enclave) and per-app address space isolation. It
 should be addressed before production launch.
 
+**Resolution (issue #40):** the
+[`PildoraSecureMemory`](../../ios/secure-memory/PildoraSecureMemory/) package
+provides `SecureBytes`, a move-only (`~Copyable`) wrapper that securely zeroizes
+key material on `deinit`, exposes scoped `withUnsafeBytes` /
+`withUnsafeMutableBytes` accessors, and documents which FFI calls return
+sensitive material. It should be adopted at the FFI call sites when the iOS app
+target is assembled.
+
 ## Alternatives considered
 
 **cbindgen (C header generation):** Lower-level, requires manual Swift
