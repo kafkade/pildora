@@ -74,7 +74,9 @@ This spike proves the FFI bridge works. Before production use:
   package (`SecureBytes`, issue #40), which also documents exactly which FFI
   calls return sensitive material.
 - **Xcode build phase**: Replace the standalone build script with an Xcode Run
-  Script build phase that cross-compiles Rust as part of the normal build.
+  Script build phase that cross-compiles Rust as part of the normal build. ✅
+  Resolved by the [`app/`](../app/) project (issue #41), which cross-compiles
+  `pildora-crypto-ffi` for the active SDK/arch on every `Cmd+B`.
 - **CI**: Add a macOS CI job that validates FFI compilation and binding
   generation.
 - **watchOS**: Validate that the `staticlib` links correctly on watchOS
