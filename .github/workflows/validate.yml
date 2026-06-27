@@ -54,6 +54,38 @@ jobs:
       - run: cd crypto && wasm-pack build --target nodejs --features wasm
       - run: node crypto/tests/wasm_node_test.cjs
 
+  # NOTE: This job validates the UniFFI Swift binding generation pipeline,
+  # which requires macOS (uniffi-bindgen loads the compiled .dylib). Its check
+  # name is "FFI (macOS)". It is NOT currently a required status check — to
+  # promote it to a merge gate, add "FFI (macOS)" to required_status_checks in
+  # kafkade/github-infra → repo_pildora.tf.
+  ffi:
+    name: FFI (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios, aarch64-apple-ios-sim
+      - uses: Swatinem/rust-cache@v2
+
+      # Builds pildora-crypto-ffi for the macOS host, cross-compiles for the
+      # iOS device + simulator targets, generates Swift bindings via
+      # uniffi-bindgen, and packages the XCFramework.
+      - name: Build XCFramework + generate Swift bindings
+        run: bash ios/ffi-spike/build-xcframework.sh
+
+      # Type-check the generated Swift bindings against the generated C FFI
+      # module to verify they compile. (The spike's XCFramework only ships iOS
+      # slices, so a full host link isn't possible — a type-check is the right
+      # validation that the generated Swift is valid.)
+      - name: Compile generated Swift bindings
+        working-directory: ios/ffi-spike/generated
+        run: |
+          swiftc -typecheck pildora_crypto_ffi.swift \
+            -Xcc -fmodule-map-file=pildora_crypto_ffiFFI.modulemap \
+            -I .
+
   python:
     name: Python
     runs-on: ubuntu-latest
