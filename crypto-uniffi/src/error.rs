@@ -36,6 +36,10 @@ pub enum FfiError {
     /// Serialization or deserialization failed.
     #[error("serialization error: {message}")]
     Serialization { message: String },
+
+    /// An SRP-6a authentication step failed.
+    #[error("authentication error: {message}")]
+    Authentication { message: String },
 }
 
 impl From<CryptoError> for FfiError {
@@ -49,6 +53,7 @@ impl From<CryptoError> for FfiError {
                 message: format!("unsupported blob version: {version}"),
             },
             CryptoError::Serialization(msg) => Self::Serialization { message: msg },
+            CryptoError::Srp(msg) => Self::Authentication { message: msg },
         }
     }
 }

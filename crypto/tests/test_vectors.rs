@@ -33,6 +33,7 @@ struct Vectors {
     blake2b: Vec<Blake2bVector>,
     key_hierarchy: Vec<KeyHierarchyVector>,
     item_encryption: Vec<ItemEncryptionVector>,
+    srp6a: Vec<Srp6aVector>,
 }
 
 #[derive(Deserialize)]
@@ -99,6 +100,28 @@ struct ItemEncryptionVector {
     plaintext_hex: String,
     blob_hex: String,
     blob_version: u8,
+}
+
+#[derive(Deserialize)]
+struct Srp6aVector {
+    description: String,
+    password_hex: String,
+    salt_hex: String,
+    identity_hex: String,
+    auth_key_hex: String,
+    n_hex: String,
+    k_hex: String,
+    x_hex: String,
+    v_hex: String,
+    a_hex: String,
+    big_a_hex: String,
+    b_hex: String,
+    big_b_hex: String,
+    u_hex: String,
+    s_hex: String,
+    session_key_hex: String,
+    m1_hex: String,
+    m2_hex: String,
 }
 
 // ── Helper ──────────────────────────────────────────────────────────────────
@@ -370,6 +393,99 @@ fn item_encryption_vectors() {
         assert_eq!(
             decrypted, expected_plaintext,
             "Item decryption mismatch: {}",
+            v.description
+        );
+    }
+}
+
+#[test]
+fn srp6a_vectors() {
+    use pildora_crypto::srp;
+
+    let vf = load_vectors();
+    assert!(!vf.vectors.srp6a.is_empty(), "no srp6a vectors found");
+
+    let group = srp::SrpGroup::rfc5054_3072();
+
+    for v in &vf.vectors.srp6a {
+        let password = hex::decode(&v.password_hex).unwrap();
+        let salt = hex::decode(&v.salt_hex).unwrap();
+        let identity = hex::decode(&v.identity_hex).unwrap();
+        let a = to_32(&hex::decode(&v.a_hex).unwrap());
+        let b = to_32(&hex::decode(&v.b_hex).unwrap());
+
+        // Derive the AuthKey through the real key hierarchy and confirm it
+        // matches the stored value (pins the x-from-AuthKey divergence).
+        let mk = key_hierarchy::derive_master_key(&password, &salt)
+            .unwrap_or_else(|e| panic!("{}: master key derivation failed: {e}", v.description));
+        let (auth_key, _mek) = key_hierarchy::derive_sub_keys(&mk)
+            .unwrap_or_else(|e| panic!("{}: sub-key derivation failed: {e}", v.description));
+        assert_eq!(
+            hex::encode(auth_key.as_bytes()),
+            v.auth_key_hex,
+            "AuthKey mismatch: {}",
+            v.description
+        );
+
+        // Recompute every SRP step and compare against the known answers.
+        let ka = srp::known_answer(group, &auth_key, &identity, &salt, a, b);
+
+        assert_eq!(
+            hex::encode(srp::group_modulus_be(group)),
+            v.n_hex,
+            "N mismatch: {}",
+            v.description
+        );
+        let steps = [
+            ("k", hex::encode(&ka.k), &v.k_hex),
+            ("x", hex::encode(&ka.x), &v.x_hex),
+            ("v", hex::encode(&ka.v), &v.v_hex),
+            ("A", hex::encode(&ka.big_a), &v.big_a_hex),
+            ("B", hex::encode(&ka.big_b), &v.big_b_hex),
+            ("u", hex::encode(&ka.u), &v.u_hex),
+            ("S", hex::encode(&ka.s), &v.s_hex),
+            ("K", hex::encode(&ka.session_key), &v.session_key_hex),
+            ("M1", hex::encode(&ka.m1), &v.m1_hex),
+            ("M2", hex::encode(&ka.m2), &v.m2_hex),
+        ];
+        for (name, got, expected) in steps {
+            assert_eq!(&got, expected, "SRP {name} mismatch: {}", v.description);
+        }
+
+        // Drive the public client/server handshake with the same fixed
+        // ephemerals and confirm it reproduces M1, M2, and a shared K.
+        let verifier = srp::Verifier::from_bytes_be(&hex::decode(&v.v_hex).unwrap());
+        let client = srp::ClientHandshake::start_with_secret(group, a);
+        let server = srp::ServerHandshake::start_with_secret(group, &verifier, b);
+
+        let client_session = client
+            .process(group, &identity, &salt, &auth_key, &server.public_b())
+            .unwrap_or_else(|e| panic!("{}: client process failed: {e}", v.description));
+        let server_session = server
+            .process(
+                group,
+                &identity,
+                &salt,
+                &client.public_a(),
+                client_session.proof_m1(),
+            )
+            .unwrap_or_else(|e| panic!("{}: server process failed: {e}", v.description));
+
+        assert_eq!(
+            client_session.session_key().as_bytes(),
+            server_session.session_key().as_bytes(),
+            "handshake session key mismatch: {}",
+            v.description
+        );
+        assert!(
+            client_session.verify_server(server_session.proof_m2()),
+            "M2 verification failed: {}",
+            v.description
+        );
+        assert_eq!(
+            hex::encode(client_session.proof_m1()),
+            v.m1_hex,
+            "handshake M1 mismatch: {}",
             v.description
         );
     }

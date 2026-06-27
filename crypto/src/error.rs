@@ -28,6 +28,11 @@ pub enum CryptoError {
     /// Serialization or deserialization of a domain object failed.
     #[error("serialization error: {0}")]
     Serialization(String),
+
+    /// An SRP-6a protocol step failed (invalid public value, proof mismatch,
+    /// or malformed input).
+    #[error("SRP protocol error: {0}")]
+    Srp(String),
 }
 
 /// Convenience alias for results from crypto operations.
