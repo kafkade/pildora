@@ -43,6 +43,7 @@ pub mod error;
 pub mod key_hierarchy;
 pub mod keys;
 pub mod primitives;
+pub mod srp;
 pub mod vault;
 
 #[cfg(feature = "wasm")]

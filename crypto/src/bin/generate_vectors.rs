@@ -8,6 +8,7 @@ use serde_json::{Value, json};
 
 use pildora_crypto::key_hierarchy;
 use pildora_crypto::primitives;
+use pildora_crypto::srp;
 use pildora_crypto::vault;
 
 fn main() {
@@ -20,6 +21,7 @@ fn main() {
     vectors.insert("blake2b".into(), generate_blake2b());
     vectors.insert("key_hierarchy".into(), generate_key_hierarchy());
     vectors.insert("item_encryption".into(), generate_item_encryption());
+    vectors.insert("srp6a".into(), generate_srp6a());
 
     let root = json!({
         "version": "1.0",
@@ -364,4 +366,85 @@ fn generate_item_encryption() -> Value {
             })
         })
         .collect()
+}
+
+// ── SRP-6a (RFC 5054 3072-bit group, SHA-256) ───────────────────────────────
+
+fn generate_srp6a() -> Value {
+    struct SrpCase {
+        description: &'static str,
+        password: &'static [u8],
+        salt: &'static [u8],
+        identity: &'static [u8],
+    }
+
+    let group = srp::SrpGroup::rfc5054_3072();
+
+    // Fixed inputs for reproducibility. The AuthKey is derived through the real
+    // key hierarchy (Argon2id → MK → HKDF) so the vectors also pin the
+    // x-from-AuthKey divergence end to end. `salt` doubles as the Argon2id salt
+    // and the SRP salt `s` (they are the same value — see ADR-008).
+    let cases = [
+        SrpCase {
+            description: "Full SRP-6a exchange, simple password",
+            password: b"correct horse battery staple",
+            salt: b"saltsaltsaltsalt",
+            identity: b"alice@example.test",
+        },
+        SrpCase {
+            description: "Full SRP-6a exchange, different identity and salt",
+            password: b"hunter2hunter2",
+            salt: b"differentsalt___",
+            identity: b"bob@example.test",
+        },
+    ];
+
+    // Fixed ephemeral secrets (never random in vectors).
+    let a_secret = [0x0a_u8; 32];
+    let b_secret = [0x0b_u8; 32];
+
+    let result: Vec<Value> = cases
+        .into_iter()
+        .map(|case| {
+            let mk = key_hierarchy::derive_master_key(case.password, case.salt)
+                .expect("master key derivation failed");
+            let (auth_key, _mek) =
+                key_hierarchy::derive_sub_keys(&mk).expect("sub-key derivation failed");
+
+            let ka = srp::known_answer(
+                group,
+                &auth_key,
+                case.identity,
+                case.salt,
+                a_secret,
+                b_secret,
+            );
+
+            json!({
+                "description": case.description,
+                "group": "RFC5054-3072",
+                "hash": "SHA-256",
+                "generator_g": 5,
+                "password_hex": hex::encode(case.password),
+                "salt_hex": hex::encode(case.salt),
+                "identity_hex": hex::encode(case.identity),
+                "auth_key_hex": hex::encode(auth_key.as_bytes()),
+                "n_hex": hex::encode(srp::group_modulus_be(group)),
+                "k_hex": hex::encode(&ka.k),
+                "x_hex": hex::encode(&ka.x),
+                "v_hex": hex::encode(&ka.v),
+                "a_hex": hex::encode(&ka.a),
+                "big_a_hex": hex::encode(&ka.big_a),
+                "b_hex": hex::encode(&ka.b),
+                "big_b_hex": hex::encode(&ka.big_b),
+                "u_hex": hex::encode(&ka.u),
+                "s_hex": hex::encode(&ka.s),
+                "session_key_hex": hex::encode(&ka.session_key),
+                "m1_hex": hex::encode(&ka.m1),
+                "m2_hex": hex::encode(&ka.m2),
+            })
+        })
+        .collect();
+
+    Value::Array(result)
 }
