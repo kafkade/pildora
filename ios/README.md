@@ -30,6 +30,15 @@ The `pildora-crypto-ffi` crate (in `crypto-uniffi/`) is a thin wrapper that
 exposes the crypto API across the FFI boundary. It is kept separate from the
 core crypto crate to preserve the `unsafe_code = "deny"` invariant.
 
+### Build integration
+
+The app ([`app/`](app/)) compiles the Rust crypto library as part of the normal
+Xcode build via a Run Script build phase — press `Cmd+B` and the active
+SDK/architecture is cross-compiled, linked, and run with no manual step. See
+[`app/README.md`](app/README.md) for setup. The standalone
+[`ffi-spike/build-xcframework.sh`](ffi-spike/build-xcframework.sh) is retained
+for CI (the **FFI (macOS)** job) and the pre-built XCFramework path.
+
 ## Dependencies
 
 - `pildora-crypto` (Rust via UniFFI FFI) — encryption operations
@@ -49,5 +58,6 @@ standalone SwiftUI package:
 - **Medication list + inventory** ([`medication-list/`](medication-list/PildoraMedicationList/), issue #50) — medication list with search, drug reference display, manual inventory tracking with low-stock / refill reminders, and profile + JSON/PDF export. Self-contained against an in-memory sample store until the data layer (#44), CRUD (#48), and design system (#43) land.
 - **Today view + dose confirmation** ([`today-view/`](today-view/PildoraTodayView/), issue #47) — chronological Today timeline with one-tap dose confirmation, swipe actions (taken/skip/snooze), PRN quick logging, and VoiceOver/Dynamic Type support. Self-contained against an in-memory sample store until schedule engine and persistence wiring land.
 - **Secure memory wrapper** ([`secure-memory/`](secure-memory/PildoraSecureMemory/), issue #40) — `SecureBytes`, a move-only (`~Copyable`) type that zeroizes key material on release, resolving the Swift memory-zeroization hardening item from ADR-007. Pure Swift library; builds and tests with `swift test`.
+- **Xcode Rust build phase** ([`app/`](app/), issue #41) — minimal Xcode app that cross-compiles `pildora-crypto-ffi` for the active SDK/arch via a Run Script build phase, so `Cmd+B` builds and runs the FFI bridge with no manual script step. Generated with XcodeGen (`project.yml`).
 
 Requires completion of `pildora-crypto` (Phase 0) before app development begins.

@@ -1,0 +1,56 @@
+name: Pildora
+options:
+  bundleIdPrefix: com.kafkade.pildora
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    # The Rust build phase shells out to cargo and reads/writes outside the
+    # target's sandbox, so user-script sandboxing must be disabled.
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+
+targets:
+  Pildora:
+    type: application
+    platform: iOS
+    sources:
+      - path: Pildora
+        # The C header and module map are consumed via SWIFT_INCLUDE_PATHS, not
+        # compiled directly, so keep them out of the project's build phases.
+        excludes:
+          - "Generated/pildora_crypto_ffiFFI.h"
+          - "Generated/module.modulemap"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kafkade.pildora
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+        # Expose the UniFFI-generated `pildora_crypto_ffiFFI` Clang module
+        # (module.modulemap + header) to the Swift importer.
+        SWIFT_INCLUDE_PATHS: "$(SRCROOT)/Pildora/Generated"
+
+        # Link the static library that the Rust build phase stages into
+        # BUILT_PRODUCTS_DIR.
+        LIBRARY_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(BUILT_PRODUCTS_DIR)"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-lpildora_crypto_ffi"
+    preBuildScripts:
+      - name: "Build Rust crypto (pildora-crypto-ffi)"
+        path: Scripts/cargo-build-phase.sh
+        # cargo performs its own fine-grained incremental compilation, so this
+        # phase is allowed to run every build (it is a fast no-op when no Rust
+        # sources changed). The staged library is declared as an output so the
+        # linker correctly depends on it.
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - "$(BUILT_PRODUCTS_DIR)/libpildora_crypto_ffi.a"
