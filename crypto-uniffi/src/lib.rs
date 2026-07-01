@@ -167,6 +167,23 @@ pub fn decrypt_json(blob_bytes: Vec<u8>, vault_key: Vec<u8>) -> Result<String, F
     })
 }
 
+// ── SQLCipher key derivation ─────────────────────────────────────────────────
+
+/// Derive a 32-byte `SQLCipher` database key from a vault key.
+///
+/// Uses HKDF-SHA256 with the domain-separation label `pildora-sqlcipher-db-key`
+/// so the database key is cryptographically distinct from the vault key itself
+/// and from any other key derived from it. The iOS data layer hex-encodes the
+/// result and hands it to `SQLCipher` as the database passphrase — one vault maps
+/// to one encrypted database file, so re-keying a vault means opening a new file.
+#[uniffi::export]
+pub fn derive_sqlcipher_key(vault_key: Vec<u8>) -> Result<Vec<u8>, FfiError> {
+    // Validate the length up front so callers get a clear FFI error.
+    let _ = vk_from_vec(&vault_key)?;
+    let key = primitives::hkdf_sha256(&vault_key, None, b"pildora-sqlcipher-db-key", 32)?;
+    Ok(key)
+}
+
 // ── Utility ──────────────────────────────────────────────────────────────────
 
 /// Generate a random 16-byte salt for Argon2id.
@@ -290,5 +307,44 @@ mod tests {
         let h2 = blake2b_hash(data);
         assert_eq!(h1, h2);
         assert_eq!(h1.len(), 32);
+    }
+
+    #[test]
+    fn ffi_derive_sqlcipher_key_deterministic_32_bytes() {
+        let vk = generate_vault_key();
+        let k1 = derive_sqlcipher_key(vk.clone()).unwrap();
+        let k2 = derive_sqlcipher_key(vk.clone()).unwrap();
+        assert_eq!(k1, k2);
+        assert_eq!(k1.len(), 32);
+        // The database key must not be the raw vault key.
+        assert_ne!(k1, vk);
+    }
+
+    #[test]
+    fn ffi_derive_sqlcipher_key_known_answer() {
+        // Fixed vault key (32 × 0x01) → HKDF-SHA256(salt=None,
+        // info="pildora-sqlcipher-db-key", L=32). Locks the derivation so any
+        // change to the label or algorithm is caught across platforms.
+        let vault_key = vec![1u8; 32];
+        let expected =
+            hex_decode("4932fed991ba6253e6a091a2cc54189cb2eb43df515ad977691d2781d70ec392");
+        assert_eq!(derive_sqlcipher_key(vault_key).unwrap(), expected);
+    }
+
+    #[test]
+    fn ffi_derive_sqlcipher_key_rejects_wrong_length() {
+        let result = derive_sqlcipher_key(vec![0u8; 16]);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            FfiError::InvalidArgument { .. } => {}
+            other => panic!("expected InvalidArgument, got {other:?}"),
+        }
+    }
+
+    fn hex_decode(s: &str) -> Vec<u8> {
+        (0..s.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+            .collect()
     }
 }

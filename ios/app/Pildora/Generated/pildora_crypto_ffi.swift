@@ -598,6 +598,11 @@ public enum FfiError: Swift.Error {
      */
     case Serialization(message: String
     )
+    /**
+     * An SRP-6a authentication step failed.
+     */
+    case Authentication(message: String
+    )
 }
 
 
@@ -630,6 +635,9 @@ public struct FfiConverterTypeFfiError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
             )
         case 6: return .Serialization(
+            message: try FfiConverterString.read(from: &buf)
+            )
+        case 7: return .Authentication(
             message: try FfiConverterString.read(from: &buf)
             )
 
@@ -671,6 +679,11 @@ public struct FfiConverterTypeFfiError: FfiConverterRustBuffer {
         
         case let .Serialization(message):
             writeInt(&buf, Int32(6))
+            FfiConverterString.write(message, into: &buf)
+            
+        
+        case let .Authentication(message):
+            writeInt(&buf, Int32(7))
             FfiConverterString.write(message, into: &buf)
             
         }
@@ -755,6 +768,22 @@ public func deriveMasterKeyWithParams(password: Data, salt: Data, memoryKib: UIn
         FfiConverterUInt32.lower(memoryKib),
         FfiConverterUInt32.lower(iterations),
         FfiConverterUInt32.lower(parallelism),$0
+    )
+})
+}
+/**
+ * Derive a 32-byte `SQLCipher` database key from a vault key.
+ *
+ * Uses HKDF-SHA256 with the domain-separation label `pildora-sqlcipher-db-key`
+ * so the database key is cryptographically distinct from the vault key itself
+ * and from any other key derived from it. The iOS data layer hex-encodes the
+ * result and hands it to `SQLCipher` as the database passphrase — one vault maps
+ * to one encrypted database file, so re-keying a vault means opening a new file.
+ */
+public func deriveSqlcipherKey(vaultKey: Data)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeFfiError_lift) {
+    uniffi_pildora_crypto_ffi_fn_func_derive_sqlcipher_key(
+        FfiConverterData.lower(vaultKey),$0
     )
 })
 }
@@ -875,6 +904,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_pildora_crypto_ffi_checksum_func_derive_master_key_with_params() != 42047) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_pildora_crypto_ffi_checksum_func_derive_sqlcipher_key() != 21239) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_pildora_crypto_ffi_checksum_func_derive_sub_keys() != 23807) {
