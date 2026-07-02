@@ -100,6 +100,43 @@ xcodebuild -create-xcframework \
 The XCFramework is consumed as a Swift Package binary target, or embedded
 directly in the Xcode project via a Run Script build phase.
 
+### watchOS support (issue #42)
+
+`pildora-crypto-ffi` also compiles, links, and runs on watchOS. Validated on
+Xcode 26 / watchOS 26.5 SDK, with an XCTest bundle run on the watchOS
+simulator (see [`ios/watchos-ffi-spike/`](../../ios/watchos-ffi-spike/)):
+
+| Rust target | Apple Watch models | Toolchain | Status |
+|---|---|---|---|
+| `aarch64-apple-watchos` | Series 9+, Ultra 2+ (device) | **stable** | ✅ builds + packaged |
+| `aarch64-apple-watchos-sim` | simulator (Apple Silicon) | **stable** | ✅ builds + packaged + tests pass |
+| `arm64_32-apple-watchos` | Series 4–8 (device) | **nightly + `-Zbuild-std`** (Tier 3) | ⛔ not built — open decision |
+| `armv7k-apple-watchos` | Series 3 & earlier | Tier 3 | N/A — below watchOS 10+ floor |
+
+`build-xcframework.sh` emits the two stable watchOS slices
+(`watchos-arm64`, `watchos-arm64-simulator`) alongside the iOS slices. The only
+build note is a harmless `dropping unsupported crate type cdylib` warning —
+watchOS forbids dynamic libraries, and we consume the `staticlib`.
+
+**Open decision — Apple Watch Series 4–8.** `docs/roadmap.md` sets a watchOS 10+
+floor, which still includes Series 4–8. Those watches use the 32-bit-pointer
+target `arm64_32-apple-watchos`, which is Tier 3 in Rust (no prebuilt `std`), so
+it requires a **nightly** toolchain built with `-Zbuild-std`. Before shipping
+the watch app, choose either: (a) adopt nightly + `-Zbuild-std` in the Xcode
+build phase and CI to cover Series 4–8, or (b) raise the watch deployment floor
+to Series 9+ and stay on stable Rust. `ios/app/Scripts/cargo-build-phase.sh`
+already maps `arm64_32` to the Rust triple, so a Series 4–8 build fails today
+until option (a) is configured.
+
+**Argon2id on watchOS.** The default 64 MiB memory cost derives a key in ~77 ms
+on the watchOS *simulator* (host RAM), but the simulator cannot exercise the
+real Apple Watch memory ceiling — third-party watchOS apps run under tight
+limits and a 64 MiB allocation may be rejected on-device. `derive_master_key_with_params`
+supports a reduced profile (validated at 16 MiB). Because different parameters
+produce a different key for the same password, any parameters used **must be
+persisted in vault metadata**. Profiling on a physical Apple Watch is required
+before the watch app ships.
+
 ### Swift Package structure
 
 ```text
@@ -178,7 +215,10 @@ the audit surface.
 - The `pildora-crypto-ffi` crate is now a workspace member and must be kept in
   sync with `pildora-crypto` API changes.
 - Rust cross-compilation toolchains for Apple targets (`aarch64-apple-ios`,
-  `aarch64-apple-ios-sim`) are required for iOS builds.
+  `aarch64-apple-ios-sim`) are required for iOS builds. watchOS adds
+  `aarch64-apple-watchos` and `aarch64-apple-watchos-sim` (both stable);
+  covering Apple Watch Series 4–8 (`arm64_32-apple-watchos`) would additionally
+  require a nightly toolchain with `-Zbuild-std` (open decision — issue #42).
 - The UniFFI bindgen step must run on macOS (loads the compiled `.dylib`).
 - CI should include a macOS job that validates FFI compilation and binding
   generation.
