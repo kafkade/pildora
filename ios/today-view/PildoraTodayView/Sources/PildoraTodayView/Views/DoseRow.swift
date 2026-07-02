@@ -1,41 +1,42 @@
 import SwiftUI
+import PildoraDesignSystem
 
 struct DoseRow: View {
     let item: TodayDoseItem
     let timeText: String
     let onMarkTaken: () -> Void
 
-    @ScaledMetric(relativeTo: .body) private var confirmationButtonMinHeight: CGFloat = 44
+    @ScaledMetric(relativeTo: .body) private var confirmationButtonMinHeight: CGFloat = Layout.minTapTarget
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
                     Text(item.dose.medicationName)
-                        .font(.headline)
+                        .font(Typography.cardTitle)
                         .foregroundStyle(titleColor)
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Spacing.sm)
                     Text(timeText)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(Typography.cardSubtitle)
+                        .foregroundStyle(Colors.textSecondary)
                 }
 
                 Text(item.dose.dosage)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(Typography.cardSubtitle)
+                    .foregroundStyle(Colors.textSecondary)
 
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.sm) {
                     DoseStatusBadge(state: item.state)
                     if item.state == .snoozed, let until = item.log?.snoozedUntil {
                         Text("until \(Self.timeFormatter.string(from: until))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(Typography.caption)
+                            .foregroundStyle(Colors.textSecondary)
                     } else if item.state == .skipped, let note = item.log?.note, !note.isEmpty {
                         Text(note)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(Typography.caption)
+                            .foregroundStyle(Colors.textSecondary)
                             .lineLimit(1)
                     }
                 }
@@ -44,7 +45,7 @@ struct DoseRow: View {
             if isActionable {
                 Button("Taken", action: onMarkTaken)
                     .buttonStyle(.borderedProminent)
-                    .tint(.green)
+                    .tint(Colors.success)
                     .controlSize(.small)
                     .frame(minHeight: confirmationButtonMinHeight)
                     .accessibilityLabel(
@@ -53,8 +54,8 @@ struct DoseRow: View {
                     .accessibilityHint("Logs this dose as taken")
             }
         }
-        .padding(.vertical, 4)
-        .frame(minHeight: 44)
+        .padding(.vertical, Spacing.xs)
+        .frame(minHeight: Layout.minTapTarget)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)
     }
@@ -69,9 +70,9 @@ struct DoseRow: View {
 
     private var titleColor: Color {
         switch item.state {
-        case .dueNow: return .orange
-        case .overdue: return .red
-        default: return .primary
+        case .dueNow: return Colors.warning
+        case .overdue: return Colors.error
+        default: return Colors.textPrimary
         }
     }
 

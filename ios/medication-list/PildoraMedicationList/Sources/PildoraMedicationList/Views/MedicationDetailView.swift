@@ -1,4 +1,5 @@
 import SwiftUI
+import PildoraDesignSystem
 
 // MARK: - Medication Detail View
 

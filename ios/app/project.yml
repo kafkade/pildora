@@ -22,6 +22,11 @@ packages:
     path: ../data-layer/PildoraDataLayer
   PildoraDrugIndex:
     path: ../drug-index/PildoraDrugIndex
+  # Shared SwiftUI design system (issue #43). Transitively pulled in via
+  # PildoraMedicationList / PildoraTodayView, but declared explicitly so the app
+  # can embed the DesignSystemCatalog directly.
+  PildoraDesignSystem:
+    path: ../design-system/PildoraDesignSystem
 
 targets:
   Pildora:
@@ -41,6 +46,8 @@ targets:
         product: PildoraDataLayer
       - package: PildoraDrugIndex
         product: PildoraDrugIndex
+      - package: PildoraDesignSystem
+        product: PildoraDesignSystem
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kafkade.pildora

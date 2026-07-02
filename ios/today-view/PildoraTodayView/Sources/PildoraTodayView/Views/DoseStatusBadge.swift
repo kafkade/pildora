@@ -1,15 +1,20 @@
 import SwiftUI
+import PildoraDesignSystem
 
+/// A dose-specific status badge. Its states are richer than the design
+/// system's generic `StatusLevel`, but it draws from the same semantic color
+/// tokens so it stays visually consistent with the rest of the app and adapts
+/// to dark mode / high-contrast automatically.
 struct DoseStatusBadge: View {
     let state: DoseState
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Spacing.xs) {
             Image(systemName: iconName)
                 .imageScale(.small)
                 .accessibilityHidden(true)
             Text(state.displayText)
-                .font(.caption.weight(.semibold))
+                .font(Typography.caption.weight(.semibold))
         }
         .foregroundStyle(color)
         .accessibilityElement(children: .combine)
@@ -28,11 +33,11 @@ struct DoseStatusBadge: View {
 
     private var color: Color {
         switch state {
-        case .upcoming: return .blue
-        case .dueNow: return .orange
-        case .overdue: return .red
-        case .taken: return .green
-        case .skipped: return .secondary
+        case .upcoming: return Colors.info
+        case .dueNow: return Colors.warning
+        case .overdue: return Colors.error
+        case .taken: return Colors.success
+        case .skipped: return Colors.textSecondary
         case .snoozed: return .indigo
         }
     }

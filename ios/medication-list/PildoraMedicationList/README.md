@@ -12,8 +12,9 @@ tracking with low-stock / refill alerts, and a profile screen with JSON + PDF
 [`PildoraDataLayer`](../../data-layer/PildoraDataLayer/) model types (its former
 duplicate models were removed) and persists mutations through a
 `MedicationRepository` seam. Drug-name autocomplete is provided by
-[`PildoraDrugIndex`](../../drug-index/PildoraDrugIndex/). The design system (#43)
-is still a minimal local token subset.
+[`PildoraDrugIndex`](../../drug-index/PildoraDrugIndex/). UI is built on the
+shared [`PildoraDesignSystem`](../../design-system/PildoraDesignSystem/) (#43);
+the former local `DesignSystem/` token subset has been removed.
 
 - **Persistence:** `MedicationStore` routes add / update / delete and inventory
   writes through `MedicationRepository`. `DatabaseMedicationRepository` (used by
@@ -42,7 +43,7 @@ SQLite; SQLCipher encryption is exercised in the `app/` target.
 |---|---|---|
 | Persistence | `DatabaseMedicationRepository` over `PildoraDataLayer` (#44) | — done (#48) |
 | CRUD | `MedicationStore` add / edit / delete + autocomplete | — done (#48) |
-| Design tokens | `DesignSystem/` minimal subset | Full design system (#43) |
+| Design tokens | Shared `PildoraDesignSystem` (#43) | — done (#43) |
 | Drug reference | `SampleData` reference entries | Local FTS5 drug index (ETL output) |
 
 ## Privacy / compliance notes

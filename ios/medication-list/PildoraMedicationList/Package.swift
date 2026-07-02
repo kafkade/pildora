@@ -21,6 +21,9 @@ let package = Package(
         // Local, plaintext FTS5 drug index that powers name autocomplete. Queries
         // never leave the device (zero-knowledge constraint).
         .package(path: "../../drug-index/PildoraDrugIndex"),
+        // Shared SwiftUI design system: tokens (color/typography/spacing) and base
+        // components used across all iOS features (issue #43).
+        .package(path: "../../design-system/PildoraDesignSystem"),
     ],
     targets: [
         .target(
@@ -28,6 +31,7 @@ let package = Package(
             dependencies: [
                 .product(name: "PildoraDataLayer", package: "PildoraDataLayer"),
                 .product(name: "PildoraDrugIndex", package: "PildoraDrugIndex"),
+                .product(name: "PildoraDesignSystem", package: "PildoraDesignSystem"),
             ],
             path: "Sources/PildoraMedicationList"
         ),
