@@ -12,11 +12,12 @@ import GRDB
 /// deliberately left off (the default) in production so data is preserved.
 enum SchemaMigrations {
     /// The current schema version identifier (latest registered migration).
-    static let currentVersion = "v1"
+    static let currentVersion = "v2"
 
     static func makeMigrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
         registerV1(&migrator)
+        registerV2(&migrator)
         return migrator
     }
 
@@ -108,6 +109,22 @@ enum SchemaMigrations {
                 on: "dose_log",
                 columns: ["medicationId", "recordedAt"]
             )
+        }
+    }
+
+    // MARK: v2 — per-medication refill-reminder toggle
+
+    /// Adds the `refillReminderEnabled` flag to `inventory` so the medication
+    /// list can persist whether a local refill reminder is scheduled for each
+    /// medication (previously an in-memory-only concern). Existing rows default
+    /// to enabled to preserve prior behavior.
+    private static func registerV2(_ migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v2-inventory-refill-reminder") { db in
+            try db.alter(table: "inventory") { t in
+                t.add(column: "refillReminderEnabled", .boolean)
+                    .notNull()
+                    .defaults(to: true)
+            }
         }
     }
 }

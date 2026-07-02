@@ -1,18 +1,26 @@
 # PildoraMedicationList
 
-SwiftUI feature package for **issue #50** — the Phase 1 (S13) medication
-management surface: medication list with search, basic drug reference data
-display, manual inventory tracking with low-stock / refill alerts, and a
-profile screen with JSON + PDF (Doctor Mode) data export.
+SwiftUI feature package for **issues #50 / #48** — the Phase 1 (S13) medication
+management surface: medication list with search, add / edit / delete CRUD with
+drug-name autocomplete, basic drug reference data display, manual inventory
+tracking with low-stock / refill alerts, and a profile screen with JSON + PDF
+(Doctor Mode) data export.
 
 ## Status
 
-🚧 Self-contained feature slice. Because its dependencies are still open
-(#43 design system, #44 SQLCipher data layer, #48 CRUD), this package ships
-against an **in-memory sample store** and a **minimal local design-token
-subset** so the screens are buildable, previewable, and testable today. The
-store and notification scheduler are protocol-/`ObservableObject`-backed so
-the real persistence and design system can be swapped in later.
+✅ CRUD + autocomplete landed (#48). The package now builds directly on the
+[`PildoraDataLayer`](../../data-layer/PildoraDataLayer/) model types (its former
+duplicate models were removed) and persists mutations through a
+`MedicationRepository` seam. Drug-name autocomplete is provided by
+[`PildoraDrugIndex`](../../drug-index/PildoraDrugIndex/). The design system (#43)
+is still a minimal local token subset.
+
+- **Persistence:** `MedicationStore` routes add / update / delete and inventory
+  writes through `MedicationRepository`. `DatabaseMedicationRepository` (used by
+  the app) is backed by the encrypted `AppDatabase` with cascade deletes;
+  `InMemoryMedicationRepository` backs previews and unit tests.
+- **Autocomplete:** the editor queries the local FTS5 index via the injectable
+  `DrugSuggesting` seam. Suggestions are debounced and run off the main actor.
 
 ## Build & test
 
@@ -25,21 +33,23 @@ swift test
 Builds on the macOS toolchain (same bar as the `ios/` spikes). iOS-only APIs
 (`UNUserNotificationCenter`, `UIGraphicsPDFRenderer`) are guarded with
 `#if os(iOS)` / `#if canImport(UIKit)` and backed by a simulated
-implementation on macOS.
+implementation on macOS. Under `swift test` the data layer runs on plain
+SQLite; SQLCipher encryption is exercised in the `app/` target.
 
 ## Wiring points (for later issues)
 
 | Concern | Today (this package) | Swap-in |
 |---|---|---|
-| Persistence | `MedicationStore` in-memory sample data | GRDB + SQLCipher data layer (#44) |
-| CRUD | `MedicationStore` mutators (inventory, settings) | Full CRUD + autocomplete (#48) |
+| Persistence | `DatabaseMedicationRepository` over `PildoraDataLayer` (#44) | — done (#48) |
+| CRUD | `MedicationStore` add / edit / delete + autocomplete | — done (#48) |
 | Design tokens | `DesignSystem/` minimal subset | Full design system (#43) |
 | Drug reference | `SampleData` reference entries | Local FTS5 drug index (ETL output) |
 
 ## Privacy / compliance notes
 
-- **Zero-knowledge / local-first:** all user data stays on-device. JSON and
-  PDF export are generated entirely on-device — no server involvement.
+- **Zero-knowledge / local-first:** all user data stays on-device. Drug-name
+  autocomplete queries the local index only — never a server. JSON and PDF
+  export are generated entirely on-device.
 - **Local notifications only:** refill reminders use local notifications so
   the server never learns dose/refill timing.
 - **Disclaimers:** every drug reference datum displays its **source + date**,

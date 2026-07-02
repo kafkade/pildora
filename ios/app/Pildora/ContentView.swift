@@ -1,71 +1,68 @@
+import PildoraMedicationList
 import SwiftUI
 
-/// Minimal smoke-test view that exercises the Rust → Swift FFI bridge.
-///
-/// Its only purpose is to prove that the Run Script build phase cross-compiled
-/// `pildora-crypto-ffi`, linked the static library, and that the UniFFI
-/// bindings call into Rust correctly at runtime. It is **not** a product
-/// screen.
+/// App root: bootstraps the encrypted vault + drug index, then hosts the
+/// medication UI. Shows a loading state while the vault opens and a recoverable
+/// error state if bootstrap fails.
 struct ContentView: View {
-    @State private var result: RoundtripResult?
+    @State private var phase: Phase = .loading
 
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "lock.shield")
-                .font(.system(size: 48))
-                .foregroundStyle(.tint)
-
-            Text("Pildora crypto FFI")
-                .font(.headline)
-
-            switch result {
-            case .none:
-                ProgressView()
-            case .success(let plaintext, let blobSize):
-                Label("FFI roundtrip OK", systemImage: "checkmark.seal.fill")
-                    .foregroundStyle(.green)
-                Text("Decrypted: \"\(plaintext)\"")
-                    .font(.subheadline)
-                Text("Encrypted blob: \(blobSize) bytes")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            case .failure(let message):
-                Label("FFI roundtrip failed", systemImage: "xmark.octagon.fill")
-                    .foregroundStyle(.red)
-                Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding()
-        .task { result = runRoundtrip() }
+    enum Phase {
+        case loading
+        case ready(MedicationStore)
+        case failed(String)
     }
 
-    /// Encrypt then decrypt a sample string entirely through the Rust crypto
-    /// library to verify the FFI bridge end to end.
-    private func runRoundtrip() -> RoundtripResult {
-        let message = "hello from Pildora"
-        do {
-            let vaultKey = generateVaultKey()
-            let plaintext = Data(message.utf8)
-            let blob = try itemEncrypt(plaintext: plaintext, vaultKey: vaultKey)
-            let decrypted = try itemDecrypt(blobBytes: blob, vaultKey: vaultKey)
-            guard let roundtripped = String(data: decrypted, encoding: .utf8),
-                  roundtripped == message else {
-                return .failure("decrypted value did not match original")
+    var body: some View {
+        switch phase {
+        case .loading:
+            ProgressView("Preparing your vault…")
+                .task { await bootstrap() }
+        case .ready(let store):
+            MainTabView(store: store)
+        case .failed(let message):
+            failureView(message)
+        }
+    }
+
+    private func failureView(_ message: String) -> some View {
+        ContentUnavailableView {
+            Label("Couldn't open your vault", systemImage: "exclamationmark.triangle")
+        } description: {
+            Text(message)
+        } actions: {
+            Button("Try Again") {
+                phase = .loading
             }
-            return .success(plaintext: roundtripped, blobSize: blob.count)
+        }
+    }
+
+    @MainActor
+    private func bootstrap() async {
+        guard case .loading = phase else { return }
+        do {
+            phase = .ready(try AppBootstrap.makeStore())
         } catch {
-            return .failure(String(describing: error))
+            phase = .failed(String(describing: error))
         }
     }
 }
 
-private enum RoundtripResult {
-    case success(plaintext: String, blobSize: Int)
-    case failure(String)
+/// Two-tab shell: the medication tracker and the developer diagnostics screen.
+struct MainTabView: View {
+    let store: MedicationStore
+
+    var body: some View {
+        TabView {
+            MedicationListView(store: store)
+                .tabItem { Label("Medications", systemImage: "pills") }
+
+            DiagnosticsView()
+                .tabItem { Label("Diagnostics", systemImage: "lock.shield") }
+        }
+    }
 }
 
 #Preview {
-    ContentView()
+    MainTabView(store: .sample())
 }

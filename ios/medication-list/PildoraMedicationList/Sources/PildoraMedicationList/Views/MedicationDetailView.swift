@@ -9,6 +9,10 @@ struct MedicationDetailView: View {
     @ObservedObject var store: MedicationStore
     let medicationID: String
 
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingEditor = false
+    @State private var showingDeleteConfirmation = false
+
     private var medication: Medication? {
         store.medications.first { $0.id == medicationID }
     }
@@ -24,15 +28,50 @@ struct MedicationDetailView: View {
                         unitNoun: medication.form.unitNoun
                     )
                     DrugReferenceSection(reference: store.reference(for: medication))
+                    deleteSection(medication)
                 }
                 .groupedListStyle()
                 .navigationTitle(medication.name)
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Edit") { showingEditor = true }
+                            .accessibilityIdentifier("edit-medication-button")
+                    }
+                }
+                .sheet(isPresented: $showingEditor) {
+                    MedicationEditorView(store: store, editing: medication)
+                }
+                .confirmationDialog(
+                    "Delete \(medication.name)?",
+                    isPresented: $showingDeleteConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete", role: .destructive) {
+                        store.deleteMedication(id: medication.id)
+                        dismiss()
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This also removes its schedules, dose history, and inventory. This can't be undone.")
+                }
             } else {
                 ContentUnavailableView("Medication not found", systemImage: "pills")
             }
+        }
+    }
+
+    private func deleteSection(_ medication: Medication) -> some View {
+        Section {
+            Button(role: .destructive) {
+                showingDeleteConfirmation = true
+            } label: {
+                Label("Delete Medication", systemImage: "trash")
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .accessibilityIdentifier("delete-medication-button")
         }
     }
 

@@ -86,6 +86,27 @@ jobs:
             -Xcc -fmodule-map-file=pildora_crypto_ffiFFI.modulemap \
             -I .
 
+  # NOTE: Validates the iOS Swift feature/data packages via `swift test` on the
+  # macOS toolchain (plain SQLite; SQLCipher is exercised in the Xcode app
+  # target, not here). Its check name is "iOS Packages (macOS)". It is NOT
+  # currently a required status check — to promote it to a merge gate, add
+  # "iOS Packages (macOS)" to required_status_checks in
+  # kafkade/github-infra → repo_pildora.tf.
+  ios-packages:
+    name: iOS Packages (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run Swift package tests
+        run: |
+          for pkg in \
+            ios/data-layer/PildoraDataLayer \
+            ios/drug-index/PildoraDrugIndex \
+            ios/medication-list/PildoraMedicationList; do
+            echo "== swift test: $pkg =="
+            swift test --package-path "$pkg"
+          done
+
   python:
     name: Python
     runs-on: ubuntu-latest

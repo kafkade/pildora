@@ -36,10 +36,11 @@ via the `DatabaseKeyDeriving` seam. The derivation is domain-separated (the DB
 key never equals the vault key) and locked across Rust and Swift by a shared
 known-answer vector.
 
-## Schema (v1)
+## Schema
 
 Every health table carries a `vaultId` foreign key. Timestamps are stored with
-millisecond precision.
+millisecond precision. The current schema version is `v2` (see
+[Migration policy](#migration-policy)).
 
 ### vault
 
@@ -120,6 +121,7 @@ serves the common history and Today-view range queries.
 | `vaultId` | TEXT | → `vault(id)` cascade, indexed |
 | `currentCount` | INTEGER | On-hand quantity |
 | `refillThreshold` | INTEGER? | Low-stock trigger |
+| `refillReminderEnabled` | INTEGER | Whether a low-stock refill reminder is scheduled (default `1`; added in **v2**) |
 | `lastRefillDate` | DATETIME? | |
 | `updatedAt` | DATETIME | |
 
@@ -145,8 +147,15 @@ Schema evolution uses GRDB's `DatabaseMigrator` (see `Migrations.swift`):
 - `eraseDatabaseOnSchemaChange` is left **off** in production (data is preserved).
 - The current version identifier is `SchemaMigrations.currentVersion`.
 
+Applied migrations:
+
+- **v1** — initial schema (`vault`, `medication`, `schedule`, `dose_log`, `inventory`).
+- **v2** (`v2-inventory-refill-reminder`) — adds `inventory.refillReminderEnabled`
+  (`INTEGER NOT NULL DEFAULT 1`), so existing rows upgrade in place with reminders
+  enabled.
+
 Phase 3 additions (drug-reference links, interaction data) will land as additive
-`v2+` migrations; the nullable `rxnormId` / `drugReferenceId` columns already
+`v3+` migrations; the nullable `rxnormId` / `drugReferenceId` columns already
 reserve the join points.
 
 ## Performance
