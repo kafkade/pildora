@@ -14,12 +14,12 @@ final class InventoryThresholdTests: XCTestCase {
     }
 
     func testIsLowAndCriticalDerivation() {
-        var rec = InventoryRecord(medicationId: "m", currentCount: 7, refillThreshold: 7)
+        var rec = InventoryRecord(medicationId: "m", vaultId: "v", currentCount: 7, refillThreshold: 7)
         XCTAssertTrue(rec.isLow)
         rec.currentCount = 8
         XCTAssertFalse(rec.isLow)
         // Critical: <= max(3, threshold/2).
-        rec = InventoryRecord(medicationId: "m", currentCount: 3, refillThreshold: 7)
+        rec = InventoryRecord(medicationId: "m", vaultId: "v", currentCount: 3, refillThreshold: 7)
         XCTAssertTrue(rec.isCritical)
         rec.currentCount = 4
         XCTAssertFalse(rec.isCritical)

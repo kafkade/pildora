@@ -8,6 +8,8 @@ import SwiftUI
 /// export screen.
 public struct MedicationListView: View {
     @ObservedObject private var store: MedicationStore
+    @State private var showingAddEditor = false
+    @State private var pendingDeletion: Medication?
 
     public init(store: MedicationStore) {
         self.store = store
@@ -27,6 +29,15 @@ public struct MedicationListView: View {
             .navigationTitle("Medications")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingAddEditor = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .accessibilityLabel("Add medication")
+                    }
+                    .accessibilityIdentifier("add-medication-button")
+                }
+                ToolbarItem(placement: profileToolbarPlacement) {
                     NavigationLink {
                         ProfileView(store: store)
                     } label: {
@@ -35,8 +46,40 @@ public struct MedicationListView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingAddEditor) {
+                MedicationEditorView(store: store)
+            }
+            .confirmationDialog(
+                "Delete this medication?",
+                isPresented: deletionBinding,
+                titleVisibility: .visible,
+                presenting: pendingDeletion
+            ) { medication in
+                Button("Delete \(medication.name)", role: .destructive) {
+                    store.deleteMedication(id: medication.id)
+                    pendingDeletion = nil
+                }
+                Button("Cancel", role: .cancel) { pendingDeletion = nil }
+            } message: { _ in
+                Text("This also removes its schedules, dose history, and inventory. This can't be undone.")
+            }
         }
         .searchable(text: $store.searchText, prompt: "Search medications")
+    }
+
+    private var deletionBinding: Binding<Bool> {
+        Binding(
+            get: { pendingDeletion != nil },
+            set: { if !$0 { pendingDeletion = nil } }
+        )
+    }
+
+    private var profileToolbarPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        .topBarLeading
+        #else
+        .automatic
+        #endif
     }
 
     private var list: some View {
@@ -51,6 +94,13 @@ public struct MedicationListView: View {
                             MedicationDetailView(store: store, medicationID: med.id)
                         } label: {
                             MedicationRow(medication: med, inventory: store.inventory(for: med.id))
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                pendingDeletion = med
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                     }
                 } header: {

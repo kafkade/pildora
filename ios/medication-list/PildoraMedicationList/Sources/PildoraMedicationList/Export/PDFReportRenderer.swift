@@ -42,7 +42,8 @@ public struct DoctorReport: Equatable {
                 }
                 lines.append(.init(detail, .caption))
                 if let inv = store.inventory(for: med.id) {
-                    lines.append(.init("Inventory: \(inv.currentCount) remaining (refill at \(inv.refillThreshold))", .caption))
+                    let thresholdText = inv.refillThreshold.map(String.init) ?? "—"
+                    lines.append(.init("Inventory: \(inv.currentCount) remaining (refill at \(thresholdText))", .caption))
                 }
                 if let ref = store.reference(for: med) {
                     lines.append(.init("Class: \(ref.drugClass)", .caption))

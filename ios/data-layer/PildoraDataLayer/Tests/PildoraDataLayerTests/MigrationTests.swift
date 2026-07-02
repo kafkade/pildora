@@ -33,12 +33,37 @@ final class MigrationTests: XCTestCase {
 
     func testMigrationIsRecordedAndIdempotent() throws {
         let applied = try db.dbQueue.read { try SchemaMigrations.makeMigrator().appliedMigrations($0) }
-        XCTAssertEqual(applied, ["v1-core-tables"])
+        XCTAssertEqual(applied, ["v1-core-tables", "v2-inventory-refill-reminder"])
 
         // Re-running migrations must be a safe no-op.
         XCTAssertNoThrow(try db.migrate())
         let appliedAgain = try db.dbQueue.read { try SchemaMigrations.makeMigrator().appliedMigrations($0) }
-        XCTAssertEqual(appliedAgain, ["v1-core-tables"])
+        XCTAssertEqual(appliedAgain, ["v1-core-tables", "v2-inventory-refill-reminder"])
+    }
+
+    func testV2AddsRefillReminderColumnDefaultingEnabled() throws {
+        try TestFixtures.seedVault(db, id: "vault-1")
+        let med = Medication(id: "med-1", vaultId: "vault-1", name: "Metformin", dosage: "500 mg")
+        try db.insertMedication(med)
+
+        // A record inserted without specifying the flag persists the column and
+        // round-trips as enabled (the migration default).
+        let record = InventoryRecord(
+            medicationId: "med-1",
+            vaultId: "vault-1",
+            currentCount: 30,
+            refillThreshold: 5
+        )
+        try db.upsertInventory(record)
+
+        let fetched = try db.fetchInventory(medicationId: "med-1")
+        XCTAssertEqual(fetched?.refillReminderEnabled, true)
+
+        // The flag persists when explicitly disabled.
+        var disabled = try XCTUnwrap(fetched)
+        disabled.refillReminderEnabled = false
+        try db.upsertInventory(disabled)
+        XCTAssertEqual(try db.fetchInventory(medicationId: "med-1")?.refillReminderEnabled, false)
     }
 
     func testReopeningPreservesDataAndSchema() throws {

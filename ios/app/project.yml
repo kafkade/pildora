@@ -2,7 +2,7 @@ name: Pildora
 options:
   bundleIdPrefix: com.kafkade.pildora
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
   createIntermediateGroups: true
 
 settings:
@@ -11,6 +11,17 @@ settings:
     # The Rust build phase shells out to cargo and reads/writes outside the
     # target's sandbox, so user-script sandboxing must be disabled.
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+
+packages:
+  # Local monorepo packages. `PildoraMedicationList` transitively brings in
+  # `PildoraDataLayer`, `PildoraDrugIndex`, and GRDB, but we depend on each
+  # product explicitly where the app uses its types directly (bootstrap).
+  PildoraMedicationList:
+    path: ../medication-list/PildoraMedicationList
+  PildoraDataLayer:
+    path: ../data-layer/PildoraDataLayer
+  PildoraDrugIndex:
+    path: ../drug-index/PildoraDrugIndex
 
 targets:
   Pildora:
@@ -23,6 +34,13 @@ targets:
         excludes:
           - "Generated/pildora_crypto_ffiFFI.h"
           - "Generated/module.modulemap"
+    dependencies:
+      - package: PildoraMedicationList
+        product: PildoraMedicationList
+      - package: PildoraDataLayer
+        product: PildoraDataLayer
+      - package: PildoraDrugIndex
+        product: PildoraDrugIndex
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kafkade.pildora
@@ -54,3 +72,27 @@ targets:
         basedOnDependencyAnalysis: false
         outputFiles:
           - "$(BUILT_PRODUCTS_DIR)/libpildora_crypto_ffi.a"
+
+  PildoraUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: PildoraUITests
+    dependencies:
+      - target: Pildora
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kafkade.pildora.uitests
+        GENERATE_INFOPLIST_FILE: "YES"
+
+schemes:
+  Pildora:
+    build:
+      targets:
+        Pildora: all
+        PildoraUITests: [test]
+    test:
+      targets:
+        - PildoraUITests
+    run:
+      config: Debug

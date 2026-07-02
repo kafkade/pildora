@@ -30,8 +30,18 @@ public final class MedicationStore: ObservableObject {
     @Published public var settings: AppSettings
     /// Search text bound to the list's search field. Matches name + generic name.
     @Published public var searchText: String = ""
+    /// Surfaces the most recent persistence error to the UI (e.g. a failed
+    /// save/delete). Cleared on the next successful mutation.
+    @Published public private(set) var lastError: String?
 
     private let notifier: RefillNotifying
+    /// Persistence backend. Mutations write through here before published state
+    /// is updated, so the encrypted database (or the in-memory fake) stays the
+    /// source of truth.
+    private let repository: MedicationRepository
+    /// Local drug-name autocomplete provider (bundled FTS5 index in the app,
+    /// a fake in tests/previews). `nil` disables suggestions gracefully.
+    private let drugSuggester: DrugSuggesting?
 
     // MARK: Init
 
@@ -40,7 +50,9 @@ public final class MedicationStore: ObservableObject {
         inventory: [InventoryRecord],
         references: [DrugReference],
         settings: AppSettings = .default,
-        notifier: RefillNotifying = SimulatedRefillNotifier()
+        notifier: RefillNotifying = SimulatedRefillNotifier(),
+        repository: MedicationRepository? = nil,
+        drugSuggester: DrugSuggesting? = nil
     ) {
         self.medications = medications
         self.inventoryByMedication = Dictionary(
@@ -51,6 +63,29 @@ public final class MedicationStore: ObservableObject {
         )
         self.settings = settings
         self.notifier = notifier
+        self.repository = repository
+            ?? InMemoryMedicationRepository(medications: medications, inventory: inventory)
+        self.drugSuggester = drugSuggester
+    }
+
+    /// Load the store from a repository (e.g. the encrypted database).
+    /// Reference data is public/plaintext and supplied separately.
+    public convenience init(
+        repository: MedicationRepository,
+        references: [DrugReference] = [],
+        settings: AppSettings = .default,
+        notifier: RefillNotifying = SimulatedRefillNotifier(),
+        drugSuggester: DrugSuggesting? = nil
+    ) throws {
+        self.init(
+            medications: try repository.fetchMedications(),
+            inventory: try repository.fetchInventory(),
+            references: references,
+            settings: settings,
+            notifier: notifier,
+            repository: repository,
+            drugSuggester: drugSuggester
+        )
     }
 
     /// Convenience initializer seeded with bundled sample data.
@@ -72,6 +107,77 @@ public final class MedicationStore: ObservableObject {
     public func reference(for medication: Medication) -> DrugReference? {
         guard let refID = medication.drugReferenceId else { return nil }
         return referencesById[refID]
+    }
+
+    // MARK: Medication mutations (CRUD)
+
+    /// Add a new medication (and optional starting inventory), persisting through
+    /// the repository before updating published state.
+    public func addMedication(_ medication: Medication, inventory: InventoryRecord? = nil) {
+        persist {
+            try repository.add(medication)
+            if let inventory { try repository.upsertInventory(inventory) }
+        }
+        medications.removeAll { $0.id == medication.id }
+        medications.append(medication)
+        if let inventory { inventoryByMedication[medication.id] = inventory }
+        reevaluateRefill(for: medication.id)
+    }
+
+    /// Persist edits to an existing medication and reflect them immediately.
+    public func updateMedication(_ medication: Medication) {
+        var stored = medication
+        persist { stored = try repository.update(medication) }
+        if let idx = medications.firstIndex(where: { $0.id == stored.id }) {
+            medications[idx] = stored
+        } else {
+            medications.append(stored)
+        }
+        reevaluateRefill(for: stored.id)
+    }
+
+    /// Delete a medication. The repository cascades to schedules, dose logs, and
+    /// inventory; the store drops its inventory row and cancels any reminder.
+    public func deleteMedication(id: String) {
+        persist { try repository.delete(medicationId: id) }
+        medications.removeAll { $0.id == id }
+        inventoryByMedication[id] = nil
+        notifier.cancelRefillReminder(medicationID: id)
+    }
+
+    /// Run a persistence operation, capturing any error into `lastError` so the
+    /// UI can surface it. Clears `lastError` on success.
+    private func persist(_ work: () throws -> Void) {
+        do {
+            try work()
+            lastError = nil
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    // MARK: Editor support
+
+    /// The vault new medications are written to (the repository's active vault).
+    public var activeVaultID: String { repository.vaultID }
+
+    /// A blank medication seeded with the active vault, for the "add" editor.
+    public func makeDraftMedication() -> Medication {
+        Medication(vaultId: activeVaultID, name: "", dosage: "")
+    }
+
+    /// Whether drug-name autocomplete is available (an index was injected).
+    public var supportsDrugSuggestions: Bool { drugSuggester != nil }
+
+    /// Ranked local autocomplete matches for the medication editor. Runs the
+    /// FTS5 query off the main actor and returns `[]` for short/blank queries or
+    /// when no index is configured. Never contacts a server.
+    public func drugSuggestions(matching query: String, limit: Int = 8) async -> [DrugSuggestion] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2, let suggester = drugSuggester else { return [] }
+        return await Task.detached(priority: .userInitiated) {
+            (try? suggester.suggestions(matching: trimmed, limit: limit)) ?? []
+        }.value
     }
 
     // MARK: Search + grouping
@@ -129,12 +235,14 @@ public final class MedicationStore: ObservableObject {
         var record = inventoryByMedication[medicationID]
             ?? InventoryRecord(
                 medicationId: medicationID,
+                vaultId: vaultId(for: medicationID),
                 currentCount: clamped,
                 refillThreshold: settings.defaultRefillThreshold
             )
         record.currentCount = clamped
         record.updatedAt = Date()
         inventoryByMedication[medicationID] = record
+        persist { try repository.upsertInventory(record) }
         reevaluateRefill(for: medicationID)
     }
 
@@ -150,6 +258,7 @@ public final class MedicationStore: ObservableObject {
         record.refillThreshold = max(0, threshold)
         record.updatedAt = Date()
         inventoryByMedication[medicationID] = record
+        persist { try repository.upsertInventory(record) }
         reevaluateRefill(for: medicationID)
     }
 
@@ -157,7 +266,9 @@ public final class MedicationStore: ObservableObject {
     public func setRefillReminderEnabled(_ enabled: Bool, for medicationID: String) {
         guard var record = inventoryByMedication[medicationID] else { return }
         record.refillReminderEnabled = enabled
+        record.updatedAt = Date()
         inventoryByMedication[medicationID] = record
+        persist { try repository.upsertInventory(record) }
         reevaluateRefill(for: medicationID)
     }
 
@@ -166,6 +277,7 @@ public final class MedicationStore: ObservableObject {
         var record = inventoryByMedication[medicationID]
             ?? InventoryRecord(
                 medicationId: medicationID,
+                vaultId: vaultId(for: medicationID),
                 currentCount: newCount,
                 refillThreshold: settings.defaultRefillThreshold
             )
@@ -173,7 +285,16 @@ public final class MedicationStore: ObservableObject {
         record.lastRefillDate = date
         record.updatedAt = date
         inventoryByMedication[medicationID] = record
+        persist { try repository.upsertInventory(record) }
         reevaluateRefill(for: medicationID)
+    }
+
+    /// The owning vault for a medication, used when creating an inventory record.
+    /// Falls back to any known medication's vault, then the default vault id.
+    private func vaultId(for medicationID: String) -> String {
+        medications.first { $0.id == medicationID }?.vaultId
+            ?? medications.first?.vaultId
+            ?? SampleData.vaultId
     }
 
     // MARK: Refill notification scheduling

@@ -125,15 +125,15 @@ public enum SampleData {
     public static func inventory(now: Date = Date()) -> [InventoryRecord] {
         let cal = Calendar.current
         return [
-            InventoryRecord(medicationId: "med-1", currentCount: 22, refillThreshold: 7,
+            InventoryRecord(medicationId: "med-1", vaultId: vaultId, currentCount: 22, refillThreshold: 7,
                             lastRefillDate: cal.date(byAdding: .day, value: -8, to: now)),
-            InventoryRecord(medicationId: "med-2", currentCount: 45, refillThreshold: 10,
+            InventoryRecord(medicationId: "med-2", vaultId: vaultId, currentCount: 45, refillThreshold: 10,
                             lastRefillDate: cal.date(byAdding: .day, value: -2, to: now)),
-            InventoryRecord(medicationId: "med-3", currentCount: 90, refillThreshold: 14),
+            InventoryRecord(medicationId: "med-3", vaultId: vaultId, currentCount: 90, refillThreshold: 14),
             // Low + critical: drives the low-stock alert + refill reminder paths.
-            InventoryRecord(medicationId: "med-4", currentCount: 3, refillThreshold: 7),
-            InventoryRecord(medicationId: "med-5", currentCount: 15, refillThreshold: 9),
-            InventoryRecord(medicationId: "med-6", currentCount: 24, refillThreshold: 5),
+            InventoryRecord(medicationId: "med-4", vaultId: vaultId, currentCount: 3, refillThreshold: 7),
+            InventoryRecord(medicationId: "med-5", vaultId: vaultId, currentCount: 15, refillThreshold: 9),
+            InventoryRecord(medicationId: "med-6", vaultId: vaultId, currentCount: 24, refillThreshold: 5),
         ]
     }
 }

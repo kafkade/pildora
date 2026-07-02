@@ -16,6 +16,8 @@ public struct InventoryRecord: Codable, Identifiable, FetchableRecord, Persistab
     public var currentCount: Int
     /// Reorder when `currentCount` falls to or below this value.
     public var refillThreshold: Int?
+    /// Whether a local refill reminder should be scheduled for this medication.
+    public var refillReminderEnabled: Bool
     public var lastRefillDate: Date?
     public var updatedAt: Date
 
@@ -25,6 +27,7 @@ public struct InventoryRecord: Codable, Identifiable, FetchableRecord, Persistab
         vaultId: String,
         currentCount: Int,
         refillThreshold: Int? = nil,
+        refillReminderEnabled: Bool = true,
         lastRefillDate: Date? = nil,
         updatedAt: Date = Date()
     ) {
@@ -33,6 +36,7 @@ public struct InventoryRecord: Codable, Identifiable, FetchableRecord, Persistab
         self.vaultId = vaultId
         self.currentCount = currentCount
         self.refillThreshold = refillThreshold
+        self.refillReminderEnabled = refillReminderEnabled
         self.lastRefillDate = lastRefillDate
         self.updatedAt = updatedAt
     }
