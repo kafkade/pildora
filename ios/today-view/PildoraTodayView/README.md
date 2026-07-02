@@ -11,7 +11,10 @@ against an in-memory sample store until shared dependencies land:
 
 - schedule engine wiring
 - medication CRUD/data layer (#44/#48)
-- full design system foundation (#43)
+
+UI is built on the shared
+[`PildoraDesignSystem`](../../design-system/PildoraDesignSystem/) (#43) for
+color/typography/spacing tokens.
 
 The store and view model shapes are intentionally structured so encrypted SQLCipher
 persistence can replace sample data without changing view contracts.

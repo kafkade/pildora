@@ -1,4 +1,5 @@
 import SwiftUI
+import PildoraDesignSystem
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -45,14 +46,14 @@ public struct TodayView: View {
                             } label: {
                                 Label("Taken", systemImage: "checkmark.circle.fill")
                             }
-                            .tint(.green)
+                            .tint(Colors.success)
 
                             Button {
                                 skip(item)
                             } label: {
                                 Label("Skip", systemImage: "forward.fill")
                             }
-                            .tint(.orange)
+                            .tint(Colors.warning)
                         }
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button {
@@ -69,19 +70,19 @@ public struct TodayView: View {
                 }
             }
         }
-        .platformListStyle()
+        .groupedListStyle()
     }
 
     private var prnSection: some View {
         Section {
             ForEach(store.prnMedications) { med in
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: Spacing.sm) {
+                    VStack(alignment: .leading, spacing: Spacing.xxs) {
                         Text(med.medicationName)
-                            .font(.subheadline.weight(.medium))
+                            .font(Typography.cardSubtitle.weight(.medium))
                         Text("\(med.dosage) · As needed")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(Typography.caption)
+                            .foregroundStyle(Colors.textSecondary)
                     }
                     Spacer()
                     Button("Log") {
@@ -90,13 +91,13 @@ public struct TodayView: View {
                     .buttonStyle(.bordered)
                     .accessibilityLabel("Log PRN dose for \(med.medicationName)")
                 }
-                .frame(minHeight: 44)
+                .frame(minHeight: Layout.minTapTarget)
             }
 
             if let latestPRN = store.prnHistoryToday.first {
                 Text("Last PRN log: \(latestPRN.medicationName) at \(store.formattedTime(latestPRN.recordedAt))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(Typography.caption)
+                    .foregroundStyle(Colors.textSecondary)
                     .accessibilityLabel(
                         "Last PRN log \(latestPRN.medicationName) at \(store.formattedTime(latestPRN.recordedAt))"
                     )
@@ -154,17 +155,6 @@ public struct TodayView: View {
         #if canImport(UIKit)
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
-        #endif
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func platformListStyle() -> some View {
-        #if os(iOS)
-        self.listStyle(.insetGrouped)
-        #else
-        self.listStyle(.automatic)
         #endif
     }
 }

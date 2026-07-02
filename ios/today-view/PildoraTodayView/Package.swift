@@ -13,9 +13,17 @@ let package = Package(
             targets: ["PildoraTodayView"]
         ),
     ],
+    dependencies: [
+        // Shared SwiftUI design system: color/typography/spacing tokens and base
+        // components used across all iOS features (issue #43).
+        .package(path: "../../design-system/PildoraDesignSystem"),
+    ],
     targets: [
         .target(
             name: "PildoraTodayView",
+            dependencies: [
+                .product(name: "PildoraDesignSystem", package: "PildoraDesignSystem"),
+            ],
             path: "Sources/PildoraTodayView"
         ),
         .testTarget(

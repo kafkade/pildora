@@ -100,8 +100,10 @@ jobs:
       - name: Run Swift package tests
         run: |
           for pkg in \
+            ios/design-system/PildoraDesignSystem \
             ios/data-layer/PildoraDataLayer \
             ios/drug-index/PildoraDrugIndex \
+            ios/today-view/PildoraTodayView \
             ios/medication-list/PildoraMedicationList; do
             echo "== swift test: $pkg =="
             swift test --package-path "$pkg"
