@@ -58,6 +58,13 @@ target/
 # UniFFI generated bindings (produced by build-xcframework.sh)
 ios/ffi-spike/generated/
 
+# watchOS FFI spike artifacts (issue #42)
+# The generated bindings are staged into the library target by run-watchos-tests.sh
+ios/watchos-ffi-spike/PildoraCryptoWatchSpike/Sources/PildoraCryptoWatchKit/pildora_crypto_ffi.swift
+ios/watchos-ffi-spike/**/.build/
+ios/watchos-ffi-spike/TestResults.xcresult/
+ios/watchos-ffi-spike/xcodebuild-test.log
+
 # Executables
 *.exe
 *.exe~

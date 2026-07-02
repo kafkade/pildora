@@ -80,7 +80,12 @@ This spike proves the FFI bridge works. Before production use:
 - **CI**: Add a macOS CI job that validates FFI compilation and binding
   generation.
 - **watchOS**: Validate that the `staticlib` links correctly on watchOS
-  (armv7k and arm64_32 architectures).
+  (armv7k and arm64_32 architectures). ✅ Resolved by the
+  [`watchos-ffi-spike/`](../watchos-ffi-spike/) (issue #42): the FFI bridge
+  builds, links, and passes an on-simulator encrypt/decrypt test suite for the
+  stable `aarch64-apple-watchos` (Series 9+) and `aarch64-apple-watchos-sim`
+  targets, now included in the XCFramework. `arm64_32` (Series 4–8) needs
+  nightly + `-Zbuild-std` and remains an open deployment-floor decision.
 
 ## Dependencies
 
