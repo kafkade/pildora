@@ -104,6 +104,7 @@ jobs:
             ios/data-layer/PildoraDataLayer \
             ios/drug-index/PildoraDrugIndex \
             ios/today-view/PildoraTodayView \
+            ios/notification-scheduler/PildoraNotificationScheduler \
             ios/medication-list/PildoraMedicationList; do
             echo "== swift test: $pkg =="
             swift test --package-path "$pkg"
