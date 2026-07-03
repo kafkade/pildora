@@ -2,10 +2,15 @@ import Foundation
 import PildoraDataLayer
 import PildoraDrugIndexLoader
 import PildoraMedicationList
+import PildoraOnboarding
 
-/// Wires the app's runtime dependencies into a persistence-backed
-/// `MedicationStore`: the encrypted vault database, the vault key, and the
-/// tiered drug autocomplete index (bundled core + downloadable full).
+/// Wires the app's runtime dependencies together and gates first launch on the
+/// onboarding flow.
+///
+/// On first run (`needsOnboarding()` is true) the app presents
+/// ``PildoraOnboarding``'s flow, which derives the master key, creates the vault
+/// key, and stores it in the Keychain. Thereafter the app opens the existing
+/// encrypted vault directly.
 enum AppBootstrap {
 
     /// The single default vault this slice operates on. Multi-vault selection is
@@ -16,6 +21,9 @@ enum AppBootstrap {
     /// core-only mode (no network).
     static let drugIndexBaseURLKey = "PildoraDrugIndexBaseURL"
 
+    /// Persists onboarding progress (resume) and the completed vault config.
+    static let onboardingStore = UserDefaultsOnboardingStateStore()
+
     /// The wired-up result of bootstrapping.
     struct Bootstrapped {
         let store: MedicationStore
@@ -24,38 +32,123 @@ enum AppBootstrap {
         let drugIndex: TieredDrugIndexProvider
     }
 
-    /// Build the fully wired app state. Runs on the main actor because both
-    /// `MedicationStore` and `TieredDrugIndexProvider` are `@MainActor`-isolated.
+    enum BootstrapError: Error {
+        /// Onboarding reported complete but no vault key is in the Keychain.
+        case missingVaultKey
+    }
+
+    /// Whether the app is running under UI tests (clean, in-memory, no onboarding).
+    static var isUITesting: Bool {
+        ProcessInfo.processInfo.arguments.contains("-uitesting")
+    }
+
+    /// Whether first-run onboarding must be shown: onboarding is incomplete or
+    /// its vault key is missing from the Keychain.
+    static func needsOnboarding() -> Bool {
+        guard onboardingStore.isOnboardingComplete else { return true }
+        return !VaultKeyStore.shared.hasKey()
+    }
+
+    // MARK: In-memory (UI tests)
+
+    /// A clean, in-memory vault so each UI-test launch starts from a known empty
+    /// state, while still exercising the real on-device core autocomplete index.
     @MainActor
-    static func bootstrap() throws -> Bootstrapped {
-        // UI tests run against a clean, in-memory vault so each launch starts
-        // from a known empty state, while still exercising the real on-device
-        // core autocomplete index (core-only: no network in tests).
-        if ProcessInfo.processInfo.arguments.contains("-uitesting") {
-            let drugIndex = try makeDrugIndexProvider(allowDownload: false)
-            let repository = InMemoryMedicationRepository(vaultID: defaultVaultID)
-            let store = try MedicationStore(repository: repository, drugSuggester: drugIndex)
-            return Bootstrapped(store: store, drugIndex: drugIndex)
+    static func makeUITestingBootstrap() throws -> Bootstrapped {
+        let drugIndex = try makeDrugIndexProvider(allowDownload: false)
+        let repository = InMemoryMedicationRepository(vaultID: defaultVaultID)
+        let store = try MedicationStore(repository: repository, drugSuggester: drugIndex)
+        return Bootstrapped(store: store, drugIndex: drugIndex)
+    }
+
+    // MARK: Open an existing vault
+
+    /// Open the already-configured encrypted vault, reading its key from the
+    /// Keychain (which may prompt for biometrics if the user enabled it).
+    @MainActor
+    static func openVault() throws -> Bootstrapped {
+        guard let vaultKey = try VaultKeyStore.shared.load() else {
+            throw BootstrapError.missingVaultKey
         }
-
-        let deriver = FFIDatabaseKeyDeriver()
-        let manager = try VaultDatabaseManager(keyDeriver: deriver)
-
-        let vaultKey = try VaultKeyStore.shared.loadOrCreateVaultKey(generate: { generateVaultKey() })
-
-        let isFirstRun = !manager.databaseExists(vaultId: defaultVaultID)
+        let manager = try VaultDatabaseManager(keyDeriver: FFIDatabaseKeyDeriver())
         let database = try manager.open(vaultId: defaultVaultID, vaultKey: vaultKey)
+        return try wire(database: database)
+    }
+
+    // MARK: Onboarding
+
+    /// Build the onboarding flow model, wiring its completion hooks to store the
+    /// vault key, seed the vault (+ optional first medication), and hand the
+    /// ready app state back to `onReady` when the user leaves the success screen.
+    @MainActor
+    static func makeOnboardingModel(
+        onReady: @escaping (Bootstrapped) -> Void
+    ) -> OnboardingFlowModel {
+        // Holds the vault opened during commit so the success screen can hand it
+        // off without re-reading (and re-prompting) the Keychain.
+        final class Ready { var bootstrapped: Bootstrapped? }
+        let ready = Ready()
+
+        return OnboardingFlowModel(
+            crypto: FFIOnboardingCrypto(),
+            store: onboardingStore,
+            biometrics: LocalAuthenticationBiometrics(),
+            vaultID: defaultVaultID,
+            vaultName: "Me",
+            onComplete: { result in
+                try VaultKeyStore.shared.save(
+                    result.vaultKey,
+                    biometricProtected: result.biometricUnlockEnabled,
+                    synchronizable: result.iCloudKeychainBackupEnabled
+                )
+                ready.bootstrapped = try seedVault(from: result)
+            },
+            onDismiss: {
+                if let bootstrapped = ready.bootstrapped {
+                    onReady(bootstrapped)
+                }
+            }
+        )
+    }
+
+    /// Create the encrypted vault database from a completed onboarding result and
+    /// seed it with the vault record and the optional first medication.
+    @MainActor
+    private static func seedVault(from result: OnboardingResult) throws -> Bootstrapped {
+        let manager = try VaultDatabaseManager(keyDeriver: FFIDatabaseKeyDeriver())
+        let isFirstRun = !manager.databaseExists(vaultId: result.config.vaultID)
+        let database = try manager.open(vaultId: result.config.vaultID, vaultKey: result.vaultKey)
 
         if isFirstRun {
             try database.insertVault(
-                Vault(id: defaultVaultID, name: "Me", profileType: .personal)
+                Vault(id: result.config.vaultID, name: result.config.vaultName, profileType: .personal)
             )
         }
 
+        if let draft = result.firstMedication, draft.isSaveable {
+            let trimmedSchedule = draft.schedule.trimmingCharacters(in: .whitespacesAndNewlines)
+            try database.insertMedication(
+                Medication(
+                    vaultId: result.config.vaultID,
+                    name: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                    dosage: draft.dosage.trimmingCharacters(in: .whitespacesAndNewlines),
+                    category: .overTheCounter,
+                    frequency: trimmedSchedule.isEmpty ? "As needed" : trimmedSchedule
+                )
+            )
+        }
+
+        return try wire(database: database)
+    }
+
+    // MARK: Shared wiring
+
+    /// Build the medication store + drug index over an open vault database.
+    @MainActor
+    private static func wire(database: AppDatabase) throws -> Bootstrapped {
         let repository = DatabaseMedicationRepository(database: database, vaultId: defaultVaultID)
         let drugIndex = try makeDrugIndexProvider(allowDownload: true)
         let store = try MedicationStore(repository: repository, drugSuggester: drugIndex)
-
         return Bootstrapped(store: store, drugIndex: drugIndex)
     }
 

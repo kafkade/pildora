@@ -286,6 +286,12 @@ RustBuffer uniffi_pildora_crypto_ffi_fn_func_derive_sub_keys(RustBuffer master_k
 RustBuffer uniffi_pildora_crypto_ffi_fn_func_encrypt_json(RustBuffer json_string, RustBuffer vault_key, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_GENERATE_RECOVERY_KEY
+#define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_GENERATE_RECOVERY_KEY
+RustBuffer uniffi_pildora_crypto_ffi_fn_func_generate_recovery_key(RustCallStatus *_Nonnull out_status
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_GENERATE_SALT
 #define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_GENERATE_SALT
 RustBuffer uniffi_pildora_crypto_ffi_fn_func_generate_salt(RustCallStatus *_Nonnull out_status
@@ -308,9 +314,24 @@ RustBuffer uniffi_pildora_crypto_ffi_fn_func_item_decrypt(RustBuffer blob_bytes,
 RustBuffer uniffi_pildora_crypto_ffi_fn_func_item_encrypt(RustBuffer plaintext, RustBuffer vault_key, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_RECOVERY_KEY_DISPLAY_STRING
+#define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_RECOVERY_KEY_DISPLAY_STRING
+RustBuffer uniffi_pildora_crypto_ffi_fn_func_recovery_key_display_string(RustBuffer recovery_key, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_UNWRAP_MEK_FROM_RECOVERY
+#define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_UNWRAP_MEK_FROM_RECOVERY
+RustBuffer uniffi_pildora_crypto_ffi_fn_func_unwrap_mek_from_recovery(RustBuffer recovery_wrapped_mek, RustBuffer recovery_key, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_UNWRAP_VAULT_KEY
 #define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_UNWRAP_VAULT_KEY
 RustBuffer uniffi_pildora_crypto_ffi_fn_func_unwrap_vault_key(RustBuffer wrapped_vk, RustBuffer mek, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_WRAP_MEK_FOR_RECOVERY
+#define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_WRAP_MEK_FOR_RECOVERY
+RustBuffer uniffi_pildora_crypto_ffi_fn_func_wrap_mek_for_recovery(RustBuffer mek, RustBuffer recovery_key, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_FN_FUNC_WRAP_VAULT_KEY
@@ -640,6 +661,12 @@ uint16_t uniffi_pildora_crypto_ffi_checksum_func_encrypt_json(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_GENERATE_RECOVERY_KEY
+#define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_GENERATE_RECOVERY_KEY
+uint16_t uniffi_pildora_crypto_ffi_checksum_func_generate_recovery_key(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_GENERATE_SALT
 #define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_GENERATE_SALT
 uint16_t uniffi_pildora_crypto_ffi_checksum_func_generate_salt(void
@@ -664,9 +691,27 @@ uint16_t uniffi_pildora_crypto_ffi_checksum_func_item_encrypt(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_RECOVERY_KEY_DISPLAY_STRING
+#define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_RECOVERY_KEY_DISPLAY_STRING
+uint16_t uniffi_pildora_crypto_ffi_checksum_func_recovery_key_display_string(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_UNWRAP_MEK_FROM_RECOVERY
+#define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_UNWRAP_MEK_FROM_RECOVERY
+uint16_t uniffi_pildora_crypto_ffi_checksum_func_unwrap_mek_from_recovery(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_UNWRAP_VAULT_KEY
 #define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_UNWRAP_VAULT_KEY
 uint16_t uniffi_pildora_crypto_ffi_checksum_func_unwrap_vault_key(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_WRAP_MEK_FOR_RECOVERY
+#define UNIFFI_FFIDEF_UNIFFI_PILDORA_CRYPTO_FFI_CHECKSUM_FUNC_WRAP_MEK_FOR_RECOVERY
+uint16_t uniffi_pildora_crypto_ffi_checksum_func_wrap_mek_for_recovery(void
     
 );
 #endif
