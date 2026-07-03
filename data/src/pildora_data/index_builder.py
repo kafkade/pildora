@@ -14,6 +14,21 @@ logger = logging.getLogger(__name__)
 
 SCHEMA_VERSION = "1.0"
 
+# Default number of drug concepts (ranked by product/NDC count) kept in the
+# compact "core" index that ships inside the app bundle. Supplements are small,
+# so all of them are kept in core regardless of this limit.
+DEFAULT_CORE_LIMIT = 500
+
+
+def default_index_version() -> str:
+    """A date-based version stamp for a dataset build (``YYYY.MM.DD``).
+
+    The app compares this string against the version of an already-installed
+    full index to decide whether a newer index is available for download. Any
+    monotonic, comparable string works; a date is human-readable and stable.
+    """
+    return datetime.now(tz=UTC).strftime("%Y.%m.%d")
+
 
 def create_schema(conn: sqlite3.Connection) -> None:
     """Create the database schema for the drug search index."""
@@ -245,10 +260,12 @@ def _insert_metadata(
     supplement_count: int,
     concept_count: int,
     alias_count: int,
+    index_version: str,
 ) -> None:
     """Insert build metadata into the metadata table."""
     meta = {
         "schema_version": SCHEMA_VERSION,
+        "index_version": index_version,
         "build_date": datetime.now(tz=UTC).isoformat(),
         "drug_concept_count": str(drug_count),
         "supplement_count": str(supplement_count),
@@ -267,6 +284,7 @@ def build_index(
     supplements: list[Supplement],
     output_path: Path,
     rxnorm_cache: dict[str, str] | None = None,
+    index_version: str | None = None,
 ) -> Path:
     """Build the SQLite FTS5 search index.
 
@@ -278,10 +296,15 @@ def build_index(
         supplements: List of Supplement objects from the ETL pipeline.
         output_path: Path where the SQLite database will be written.
         rxnorm_cache: Optional dict mapping drug name (lowercase) → RxCUI.
+        index_version: Optional dataset version stamp written to metadata.
+            Defaults to a date-based version (:func:`default_index_version`).
+            When building a core/full pair, pass the *same* version to both so
+            the app treats them as one dataset.
 
     Returns:
         Path to the created SQLite database.
     """
+    version = index_version or default_index_version()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Remove existing database so we build fresh
@@ -308,15 +331,20 @@ def build_index(
         alias_count = conn.execute("SELECT COUNT(*) FROM drug_aliases").fetchone()[0]
         supp_count = conn.execute("SELECT COUNT(*) FROM supplements").fetchone()[0]
 
-        _insert_metadata(conn, concept_count, supp_count, concept_count + supp_count, alias_count)
+        _insert_metadata(
+            conn, concept_count, supp_count, concept_count + supp_count, alias_count, version
+        )
 
         conn.commit()
 
-        # VACUUM to compact the database
+        # VACUUM to compact the database (also switch off WAL so the
+        # shipped/downloaded file is a single self-contained artifact).
+        conn.execute("PRAGMA journal_mode=DELETE")
         conn.execute("VACUUM")
 
         logger.info(
-            "Built index: %d concepts, %d aliases, %d products, %d supplements → %s",
+            "Built index (version %s): %d concepts, %d aliases, %d products, %d supplements → %s",
+            version,
             concept_count,
             alias_count,
             conn.execute("SELECT COUNT(*) FROM drug_products").fetchone()[0],
@@ -327,6 +355,66 @@ def build_index(
         conn.close()
 
     return output_path
+
+
+def select_core_generic_keys(
+    drugs: list[DrugProduct],
+    limit: int = DEFAULT_CORE_LIMIT,
+) -> set[str]:
+    """Pick the concept keys for the ``limit`` most common drugs.
+
+    "Most common" is approximated by NDC/product count per concept — the same
+    prevalence signal already used to choose which drugs get RxNorm lookups.
+    Returns concept keys (lowercased generic/drug name), matching the keys
+    produced by :func:`build_drug_concepts`.
+    """
+    concepts = build_drug_concepts(drugs)
+    ranked = sorted(concepts, key=lambda k: len(concepts[k]["products"]), reverse=True)
+    return set(ranked[:limit])
+
+
+def select_core_drugs(
+    drugs: list[DrugProduct],
+    limit: int = DEFAULT_CORE_LIMIT,
+) -> list[DrugProduct]:
+    """Filter ``drugs`` down to the products of the top-``limit`` concepts.
+
+    The result is a strict subset of ``drugs`` (core ⊆ full), preserving every
+    product of each selected concept so the core index behaves identically to
+    the full index for the common drugs it contains.
+    """
+    core_keys = select_core_generic_keys(drugs, limit)
+    return [d for d in drugs if (d.generic_name or d.drug_name).strip().lower() in core_keys]
+
+
+def build_core_index(
+    drugs: list[DrugProduct],
+    supplements: list[Supplement],
+    output_path: Path,
+    limit: int = DEFAULT_CORE_LIMIT,
+    rxnorm_cache: dict[str, str] | None = None,
+    index_version: str | None = None,
+) -> Path:
+    """Build the compact **core** index bundled inside the app.
+
+    Keeps only the top-``limit`` drug concepts (by prevalence) but *all*
+    supplements (they are small). Schema-identical to the full index, so the
+    app reads either interchangeably.
+    """
+    core_drugs = select_core_drugs(drugs, limit)
+    logger.info(
+        "Core selection: %d of %d drug products (top %d concepts)",
+        len(core_drugs),
+        len(drugs),
+        limit,
+    )
+    return build_index(
+        core_drugs,
+        supplements,
+        output_path,
+        rxnorm_cache=rxnorm_cache,
+        index_version=index_version,
+    )
 
 
 def get_index_stats(db_path: Path) -> dict[str, str | int]:

@@ -1,12 +1,16 @@
+import PildoraDrugIndexLoader
 import SwiftUI
 
-/// Developer diagnostics: exercises the Rust → Swift crypto FFI bridge.
+/// Developer diagnostics: exercises the Rust → Swift crypto FFI bridge and
+/// surfaces the drug-index tier / download status.
 ///
 /// Preserves the original FFI smoke test (encrypt/decrypt roundtrip) so the
 /// bridge stays verifiable from the running app, now tucked behind a tab rather
 /// than being the app's only screen.
 struct DiagnosticsView: View {
     @State private var result: RoundtripResult?
+    /// Optional so the standalone `#Preview` (FFI only) keeps working.
+    var drugIndex: TieredDrugIndexProvider?
 
     var body: some View {
         NavigationStack {
@@ -35,6 +39,11 @@ struct DiagnosticsView: View {
                     Text(message)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+
+                if let drugIndex {
+                    Divider().padding(.vertical, 4)
+                    DrugIndexDiagnosticsRow(provider: drugIndex)
                 }
             }
             .padding()
@@ -66,6 +75,42 @@ struct DiagnosticsView: View {
 private enum RoundtripResult {
     case success(plaintext: String, blobSize: Int)
     case failure(String)
+}
+
+/// Compact diagnostics row showing which drug-index tier is active and the
+/// full-index download status.
+private struct DrugIndexDiagnosticsRow: View {
+    @ObservedObject var provider: TieredDrugIndexProvider
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("Drug index")
+                .font(.headline)
+            Label(tierText, systemImage: provider.activeTier == .full ? "checkmark.seal" : "shippingbox")
+                .font(.subheadline)
+            Text(stateText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+
+    private var tierText: String {
+        switch provider.activeTier {
+        case .core: return "Active tier: core (bundled, offline)"
+        case .full: return "Active tier: full (downloaded)"
+        }
+    }
+
+    private var stateText: String {
+        switch provider.state {
+        case .idle: return "Idle"
+        case .downloading(let progress): return "Downloading full index… \(Int(progress * 100))%"
+        case .upToDate(let version): return "Full index up to date (v\(version))"
+        case .installed(let version): return "Full index installed (v\(version))"
+        case .failed(let reason): return "Download failed: \(reason)"
+        }
+    }
 }
 
 #Preview {

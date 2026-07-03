@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from pildora_data.download import download_dailymed_supplements, download_openfda_ndc
+from pildora_data.index_builder import DEFAULT_CORE_LIMIT
 from pildora_data.output import generate_quality_report, write_jsonl
 from pildora_data.parsers.dailymed import parse_dailymed_supplements
 from pildora_data.parsers.openfda import parse_openfda_ndc
@@ -60,6 +61,34 @@ def main() -> None:
         action="store_true",
         help="Compress the index with gzip after building",
     )
+    parser.add_argument(
+        "--tiered",
+        action="store_true",
+        help=(
+            "Build a core/full split: a compact core index (top drugs, bundled in "
+            "the app) plus the full index (downloaded on first launch)"
+        ),
+    )
+    parser.add_argument(
+        "--core-limit",
+        type=int,
+        default=DEFAULT_CORE_LIMIT,
+        help=(
+            "Number of top drug concepts (by product count) to keep in the core "
+            f"index when --tiered is set (default: {DEFAULT_CORE_LIMIT})"
+        ),
+    )
+    parser.add_argument(
+        "--index-version",
+        type=str,
+        default=None,
+        help="Dataset version stamp (default: today's date, YYYY.MM.DD)",
+    )
+    parser.add_argument(
+        "--manifest",
+        action="store_true",
+        help="Emit manifest.json (with artifact hashes/sizes); implies --tiered --compress",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -109,10 +138,19 @@ def main() -> None:
 
     # Step 6: Build search index (optional)
     if args.index:
-        from pildora_data.index_builder import build_index, get_index_stats
+        from pildora_data.index_builder import (
+            build_core_index,
+            build_index,
+            default_index_version,
+            get_index_stats,
+        )
+
+        # --manifest implies a tiered build with compressed artifacts.
+        tiered = args.tiered or args.manifest
+        compress = args.compress or args.manifest
+        index_version = args.index_version or default_index_version()
 
         logger.info("=== Step 6: Building SQLite FTS5 search index ===")
-        db_path = args.output_db or (output_dir / "pildora_drugs.sqlite")
 
         rxnorm_cache = None
         if not args.skip_rxnorm:
@@ -129,23 +167,71 @@ def main() -> None:
             except Exception:
                 logger.exception("RxNorm lookup failed, continuing without RxCUI")
 
-        build_index(drugs, supplements, db_path, rxnorm_cache=rxnorm_cache)
+        def _print_stats(label: str, path: Path) -> None:
+            stats = get_index_stats(path)
+            print(f"\n--- {label} Index Statistics ---")
+            print(f"  Concepts:    {stats['concepts']}")
+            print(f"  Aliases:     {stats['aliases']}")
+            print(f"  Products:    {stats['products']}")
+            print(f"  Supplements: {stats['supplements']}")
+            print(f"  File size:   {stats['file_size_bytes']:,} bytes")
 
-        stats = get_index_stats(db_path)
-        print("\n--- Search Index Statistics ---")
-        print(f"  Concepts:    {stats['concepts']}")
-        print(f"  Aliases:     {stats['aliases']}")
-        print(f"  Products:    {stats['products']}")
-        print(f"  Supplements: {stats['supplements']}")
-        print(f"  File size:   {stats['file_size_bytes']:,} bytes")
+        if not tiered:
+            db_path = args.output_db or (output_dir / "pildora_drugs.sqlite")
+            build_index(
+                drugs, supplements, db_path, rxnorm_cache=rxnorm_cache, index_version=index_version
+            )
+            _print_stats("Search", db_path)
 
-        # Step 7: Compress (optional)
-        if args.compress:
-            from pildora_data.compress import compress_index
+            if compress:
+                from pildora_data.compress import compress_index
 
-            logger.info("=== Step 7: Compressing index ===")
-            gz_path = compress_index(db_path)
-            gz_size = gz_path.stat().st_size
-            print(f"  Compressed:  {gz_size:,} bytes → {gz_path}")
+                logger.info("=== Step 7: Compressing index ===")
+                gz_path = compress_index(db_path)
+                print(f"  Compressed:  {gz_path.stat().st_size:,} bytes → {gz_path}")
+        else:
+            # Tiered build: compact core (bundled) + full (downloaded on first launch).
+            full_db = output_dir / "pildora_drugs_full.sqlite"
+            core_db = output_dir / "pildora_drugs_core.sqlite"
+
+            logger.info("Building full index (version %s) …", index_version)
+            build_index(
+                drugs, supplements, full_db, rxnorm_cache=rxnorm_cache, index_version=index_version
+            )
+            _print_stats("Full", full_db)
+
+            logger.info("Building core index (top %d concepts) …", args.core_limit)
+            build_core_index(
+                drugs,
+                supplements,
+                core_db,
+                limit=args.core_limit,
+                rxnorm_cache=rxnorm_cache,
+                index_version=index_version,
+            )
+            _print_stats("Core", core_db)
+
+            if compress:
+                from pildora_data.compress import compress_index
+
+                logger.info("=== Step 7: Compressing tiered indexes ===")
+                full_gz = compress_index(full_db)
+                core_gz = compress_index(core_db)
+                print(f"  Full compressed:  {full_gz.stat().st_size:,} bytes → {full_gz}")
+                print(f"  Core compressed:  {core_gz.stat().st_size:,} bytes → {core_gz}")
+
+                if args.manifest:
+                    from pildora_data.manifest import emit_manifest
+
+                    logger.info("=== Step 8: Emitting manifest ===")
+                    manifest_path = emit_manifest(
+                        output_dir,
+                        index_version,
+                        core_gz=core_gz,
+                        core_db=core_db,
+                        full_gz=full_gz,
+                        full_db=full_db,
+                    )
+                    print(f"  Manifest:         {manifest_path}")
 
     logger.info("ETL pipeline complete. Output written to %s", output_dir)

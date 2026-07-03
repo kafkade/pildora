@@ -22,6 +22,11 @@ packages:
     path: ../data-layer/PildoraDataLayer
   PildoraDrugIndex:
     path: ../drug-index/PildoraDrugIndex
+  # Tiered drug-index loader (issue #68): bundles the compact core index and
+  # downloads + verifies the full index from a CDN on first launch. Networking
+  # lives here so the read-only PildoraDrugIndex reader stays offline-only.
+  PildoraDrugIndexLoader:
+    path: ../drug-index-loader/PildoraDrugIndexLoader
   # Shared SwiftUI design system (issue #43). Transitively pulled in via
   # PildoraMedicationList / PildoraTodayView, but declared explicitly so the app
   # can embed the DesignSystemCatalog directly.
@@ -46,6 +51,8 @@ targets:
         product: PildoraDataLayer
       - package: PildoraDrugIndex
         product: PildoraDrugIndex
+      - package: PildoraDrugIndexLoader
+        product: PildoraDrugIndexLoader
       - package: PildoraDesignSystem
         product: PildoraDesignSystem
     settings:
@@ -56,6 +63,13 @@ targets:
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
+
+        # Base URL the tiered drug-index loader fetches `manifest.json` and the
+        # compressed full index from (issue #68). Empty by default ⇒ the app
+        # runs in core-only mode (no network). Override per-configuration (e.g.
+        # via an xcconfig) to point at the CDN. This is a public reference-data
+        # endpoint; no user data or query text is ever sent to it.
+        INFOPLIST_KEY_PildoraDrugIndexBaseURL: ""
 
         # Expose the UniFFI-generated `pildora_crypto_ffiFFI` Clang module
         # (module.modulemap + header) to the Swift importer.
@@ -70,6 +84,16 @@ targets:
           - "$(inherited)"
           - "-lpildora_crypto_ffi"
     preBuildScripts:
+      - name: "Generate bundled core drug index (core-index.db)"
+        path: Scripts/generate-core-index.sh
+        # Regenerates the bundled core index from core-seed.json when the seed
+        # changes. Non-fatal on failure: the app builds the core index from the
+        # bundled JSON at first launch if the prebuilt .db is absent.
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "$(SRCROOT)/Pildora/Resources/core-seed.json"
+        outputFiles:
+          - "$(SRCROOT)/Pildora/Resources/core-index.db"
       - name: "Build Rust crypto (pildora-crypto-ffi)"
         path: Scripts/cargo-build-phase.sh
         # cargo performs its own fine-grained incremental compilation, so this
