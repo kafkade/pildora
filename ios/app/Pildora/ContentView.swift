@@ -1,8 +1,10 @@
 import PildoraDrugIndexLoader
 import PildoraMedicationList
+import PildoraOnboarding
 import SwiftUI
 
-/// App root: bootstraps the encrypted vault + drug index, then hosts the
+/// App root: on first run it presents the onboarding flow (master password +
+/// recovery key), otherwise it opens the existing encrypted vault and hosts the
 /// medication UI. Shows a loading state while the vault opens and a recoverable
 /// error state if bootstrap fails.
 struct ContentView: View {
@@ -10,6 +12,7 @@ struct ContentView: View {
 
     enum Phase {
         case loading
+        case onboarding(OnboardingFlowModel)
         case ready(MedicationStore, TieredDrugIndexProvider)
         case failed(String)
     }
@@ -19,6 +22,8 @@ struct ContentView: View {
         case .loading:
             ProgressView("Preparing your vault…")
                 .task { await bootstrap() }
+        case .onboarding(let model):
+            OnboardingFlowView(model: model)
         case .ready(let store, let drugIndex):
             MainTabView(store: store, drugIndex: drugIndex)
         case .failed(let message):
@@ -42,15 +47,34 @@ struct ContentView: View {
     private func bootstrap() async {
         guard case .loading = phase else { return }
         do {
-            let bootstrapped = try AppBootstrap.bootstrap()
-            // Non-blocking: kick off the one-time full-index download. Any
-            // failure is reflected in the provider's state and leaves the
-            // bundled core index serving autocomplete.
-            bootstrapped.drugIndex.startFullIndexDownloadIfNeeded()
-            phase = .ready(bootstrapped.store, bootstrapped.drugIndex)
+            // UI tests bypass onboarding and run against a clean in-memory vault.
+            if AppBootstrap.isUITesting {
+                activate(try AppBootstrap.makeUITestingBootstrap())
+                return
+            }
+
+            if AppBootstrap.needsOnboarding() {
+                let model = AppBootstrap.makeOnboardingModel { bootstrapped in
+                    activate(bootstrapped)
+                }
+                phase = .onboarding(model)
+                return
+            }
+
+            activate(try AppBootstrap.openVault())
         } catch {
             phase = .failed(String(describing: error))
         }
+    }
+
+    /// Move to the ready state and kick off the one-time full-index download.
+    @MainActor
+    private func activate(_ bootstrapped: AppBootstrap.Bootstrapped) {
+        // Non-blocking: kick off the one-time full-index download. Any failure is
+        // reflected in the provider's state and leaves the bundled core index
+        // serving autocomplete.
+        bootstrapped.drugIndex.startFullIndexDownloadIfNeeded()
+        phase = .ready(bootstrapped.store, bootstrapped.drugIndex)
     }
 }
 

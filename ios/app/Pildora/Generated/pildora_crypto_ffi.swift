@@ -811,6 +811,22 @@ public func encryptJson(jsonString: String, vaultKey: Data)throws  -> Data  {
 })
 }
 /**
+ * Generate a random 32-byte recovery key.
+ *
+ * The recovery key is an alternate path to the Master Encryption Key: it can
+ * unwrap the MEK (via [`wrap_mek_for_recovery`] / [`unwrap_mek_from_recovery`])
+ * if the master password is lost. It is generated on-device, shown to the user
+ * exactly once, and never persisted in plaintext — only the MEK wrapped *by*
+ * the recovery key is stored. Losing both the master password and this key
+ * means the vault is permanently unrecoverable.
+ */
+public func generateRecoveryKey() -> Data  {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_pildora_crypto_ffi_fn_func_generate_recovery_key($0
+    )
+})
+}
+/**
  * Generate a random 16-byte salt for Argon2id.
  */
 public func generateSalt() -> Data  {
@@ -853,6 +869,34 @@ public func itemEncrypt(plaintext: Data, vaultKey: Data)throws  -> Data  {
 })
 }
 /**
+ * Format a recovery key as the human-readable, grouped string shown to the
+ * user and printed on the recovery PDF.
+ *
+ * Uses Crockford Base32 (no ambiguous characters) in dash-separated groups of
+ * five, with a 2-character checksum suffix so a mistyped key can be detected.
+ */
+public func recoveryKeyDisplayString(recoveryKey: Data)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFfiError_lift) {
+    uniffi_pildora_crypto_ffi_fn_func_recovery_key_display_string(
+        FfiConverterData.lower(recoveryKey),$0
+    )
+})
+}
+/**
+ * Unwrap the Master Encryption Key using the recovery key.
+ *
+ * Returns the 32-byte MEK, which can then unwrap the vault key(s). Fails if the
+ * recovery key is wrong or the blob has been tampered with.
+ */
+public func unwrapMekFromRecovery(recoveryWrappedMek: Data, recoveryKey: Data)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeFfiError_lift) {
+    uniffi_pildora_crypto_ffi_fn_func_unwrap_mek_from_recovery(
+        FfiConverterData.lower(recoveryWrappedMek),
+        FfiConverterData.lower(recoveryKey),$0
+    )
+})
+}
+/**
  * Unwrap a vault key using the master encryption key.
  *
  * Returns the 32-byte vault key.
@@ -862,6 +906,20 @@ public func unwrapVaultKey(wrappedVk: Data, mek: Data)throws  -> Data  {
     uniffi_pildora_crypto_ffi_fn_func_unwrap_vault_key(
         FfiConverterData.lower(wrappedVk),
         FfiConverterData.lower(mek),$0
+    )
+})
+}
+/**
+ * Wrap the Master Encryption Key with the recovery key for offline backup.
+ *
+ * The returned blob is stored alongside the vault so the MEK can later be
+ * recovered from the printed key. The recovery key itself is never stored.
+ */
+public func wrapMekForRecovery(mek: Data, recoveryKey: Data)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeFfiError_lift) {
+    uniffi_pildora_crypto_ffi_fn_func_wrap_mek_for_recovery(
+        FfiConverterData.lower(mek),
+        FfiConverterData.lower(recoveryKey),$0
     )
 })
 }
@@ -915,6 +973,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_pildora_crypto_ffi_checksum_func_encrypt_json() != 45826) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_pildora_crypto_ffi_checksum_func_generate_recovery_key() != 15318) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_pildora_crypto_ffi_checksum_func_generate_salt() != 32413) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -927,7 +988,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_pildora_crypto_ffi_checksum_func_item_encrypt() != 23780) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_pildora_crypto_ffi_checksum_func_recovery_key_display_string() != 14699) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_pildora_crypto_ffi_checksum_func_unwrap_mek_from_recovery() != 9482) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_pildora_crypto_ffi_checksum_func_unwrap_vault_key() != 54203) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_pildora_crypto_ffi_checksum_func_wrap_mek_for_recovery() != 25701) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_pildora_crypto_ffi_checksum_func_wrap_vault_key() != 52272) {

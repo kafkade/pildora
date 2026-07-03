@@ -34,7 +34,9 @@ uniffi::setup_scaffolding!();
 mod error;
 pub use error::FfiError;
 
-use pildora_crypto::key_hierarchy::{self, MasterEncryptionKey, VaultKey};
+use pildora_crypto::key_hierarchy::{
+    self, MasterEncryptionKey, RecoveryKey, RecoveryWrappedMek, VaultKey,
+};
 use pildora_crypto::primitives;
 
 // ── FFI-safe record types ────────────────────────────────────────────────────
@@ -168,7 +170,6 @@ pub fn decrypt_json(blob_bytes: Vec<u8>, vault_key: Vec<u8>) -> Result<String, F
 }
 
 // ── SQLCipher key derivation ─────────────────────────────────────────────────
-
 /// Derive a 32-byte `SQLCipher` database key from a vault key.
 ///
 /// Uses HKDF-SHA256 with the domain-separation label `pildora-sqlcipher-db-key`
@@ -182,6 +183,59 @@ pub fn derive_sqlcipher_key(vault_key: Vec<u8>) -> Result<Vec<u8>, FfiError> {
     let _ = vk_from_vec(&vault_key)?;
     let key = primitives::hkdf_sha256(&vault_key, None, b"pildora-sqlcipher-db-key", 32)?;
     Ok(key)
+}
+
+// ── Recovery key ─────────────────────────────────────────────────────────────
+
+/// Generate a random 32-byte recovery key.
+///
+/// The recovery key is an alternate path to the Master Encryption Key: it can
+/// unwrap the MEK (via [`wrap_mek_for_recovery`] / [`unwrap_mek_from_recovery`])
+/// if the master password is lost. It is generated on-device, shown to the user
+/// exactly once, and never persisted in plaintext — only the MEK wrapped *by*
+/// the recovery key is stored. Losing both the master password and this key
+/// means the vault is permanently unrecoverable.
+#[uniffi::export]
+pub fn generate_recovery_key() -> Vec<u8> {
+    key_hierarchy::generate_recovery_key().as_bytes().to_vec()
+}
+
+/// Format a recovery key as the human-readable, grouped string shown to the
+/// user and printed on the recovery PDF.
+///
+/// Uses Crockford Base32 (no ambiguous characters) in dash-separated groups of
+/// five, with a 2-character checksum suffix so a mistyped key can be detected.
+#[uniffi::export]
+pub fn recovery_key_display_string(recovery_key: Vec<u8>) -> Result<String, FfiError> {
+    let rk = rk_from_vec(&recovery_key)?;
+    Ok(rk.to_display_string())
+}
+
+/// Wrap the Master Encryption Key with the recovery key for offline backup.
+///
+/// The returned blob is stored alongside the vault so the MEK can later be
+/// recovered from the printed key. The recovery key itself is never stored.
+#[uniffi::export]
+pub fn wrap_mek_for_recovery(mek: Vec<u8>, recovery_key: Vec<u8>) -> Result<Vec<u8>, FfiError> {
+    let mek = mek_from_vec(&mek)?;
+    let rk = rk_from_vec(&recovery_key)?;
+    let wrapped = key_hierarchy::wrap_mek_for_recovery(&mek, &rk)?;
+    Ok(wrapped.0)
+}
+
+/// Unwrap the Master Encryption Key using the recovery key.
+///
+/// Returns the 32-byte MEK, which can then unwrap the vault key(s). Fails if the
+/// recovery key is wrong or the blob has been tampered with.
+#[uniffi::export]
+pub fn unwrap_mek_from_recovery(
+    recovery_wrapped_mek: Vec<u8>,
+    recovery_key: Vec<u8>,
+) -> Result<Vec<u8>, FfiError> {
+    let rk = rk_from_vec(&recovery_key)?;
+    let wrapped = RecoveryWrappedMek(recovery_wrapped_mek);
+    let mek = key_hierarchy::unwrap_mek_from_recovery(&wrapped, &rk)?;
+    Ok(mek.as_bytes().to_vec())
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
@@ -222,6 +276,13 @@ fn mk_from_vec(bytes: &[u8]) -> Result<key_hierarchy::MasterKey, FfiError> {
         message: format!("master key must be 32 bytes, got {}", bytes.len()),
     })?;
     Ok(key_hierarchy::MasterKey::from_bytes(arr))
+}
+
+fn rk_from_vec(bytes: &[u8]) -> Result<RecoveryKey, FfiError> {
+    let arr: [u8; 32] = bytes.try_into().map_err(|_| FfiError::InvalidArgument {
+        message: format!("recovery key must be 32 bytes, got {}", bytes.len()),
+    })?;
+    Ok(RecoveryKey::from_bytes(arr))
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -339,6 +400,77 @@ mod tests {
             FfiError::InvalidArgument { .. } => {}
             other => panic!("expected InvalidArgument, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn ffi_recovery_key_is_32_bytes() {
+        let rk = generate_recovery_key();
+        assert_eq!(rk.len(), 32);
+    }
+
+    #[test]
+    fn ffi_recovery_key_display_string_grouped_with_checksum() {
+        // Fixed key so the format is locked across platforms.
+        let rk = vec![0u8; 32];
+        let s = recovery_key_display_string(rk).unwrap();
+        // Groups of 5 Crockford-base32 chars, dash-separated.
+        let groups: Vec<&str> = s.split('-').collect();
+        assert!(groups.len() > 1);
+        for (i, g) in groups.iter().enumerate() {
+            // All but possibly the last group are 5 chars; none exceed 5.
+            assert!(g.len() <= 5, "group {i} too long: {g}");
+            assert!(g.chars().all(|c| c.is_ascii_alphanumeric()));
+        }
+    }
+
+    #[test]
+    fn ffi_recovery_key_display_string_rejects_wrong_length() {
+        let result = recovery_key_display_string(vec![0u8; 16]);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            FfiError::InvalidArgument { .. } => {}
+            other => panic!("expected InvalidArgument, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn ffi_recovery_wrap_unwrap_mek_roundtrip() {
+        // Derive a real MEK, wrap it under a recovery key, and recover it.
+        let mk = derive_master_key(b"pw".to_vec(), generate_salt()).unwrap();
+        let sub = derive_sub_keys(mk).unwrap();
+        let rk = generate_recovery_key();
+
+        let wrapped = wrap_mek_for_recovery(sub.mek.clone(), rk.clone()).unwrap();
+        let recovered = unwrap_mek_from_recovery(wrapped, rk).unwrap();
+        assert_eq!(recovered, sub.mek);
+    }
+
+    #[test]
+    fn ffi_recovery_wrong_key_fails() {
+        let mk = derive_master_key(b"pw".to_vec(), generate_salt()).unwrap();
+        let sub = derive_sub_keys(mk).unwrap();
+        let rk = generate_recovery_key();
+        let wrong = generate_recovery_key();
+
+        let wrapped = wrap_mek_for_recovery(sub.mek, rk).unwrap();
+        assert!(unwrap_mek_from_recovery(wrapped, wrong).is_err());
+    }
+
+    #[test]
+    fn ffi_recovery_key_can_unwrap_vault_key() {
+        // End-to-end: recovery key → MEK → unwrap the wrapped vault key.
+        let mk = derive_master_key(b"pw".to_vec(), generate_salt()).unwrap();
+        let sub = derive_sub_keys(mk).unwrap();
+        let vk = generate_vault_key();
+        let wrapped_vk = wrap_vault_key(vk.clone(), sub.mek.clone()).unwrap();
+
+        let rk = generate_recovery_key();
+        let recovery_blob = wrap_mek_for_recovery(sub.mek, rk.clone()).unwrap();
+
+        // Simulate recovery from the printed key only.
+        let recovered_mek = unwrap_mek_from_recovery(recovery_blob, rk).unwrap();
+        let recovered_vk = unwrap_vault_key(wrapped_vk, recovered_mek).unwrap();
+        assert_eq!(recovered_vk, vk);
     }
 
     fn hex_decode(s: &str) -> Vec<u8> {

@@ -32,6 +32,15 @@ packages:
   # can embed the DesignSystemCatalog directly.
   PildoraDesignSystem:
     path: ../design-system/PildoraDesignSystem
+  # First-run onboarding (issue #53): master password, recovery key + PDF, first
+  # vault, biometric opt-in. Self-contained SwiftUI slice built on the design
+  # system; the app supplies the FFI-backed crypto seam.
+  PildoraOnboarding:
+    path: ../onboarding/PildoraOnboarding
+  # Move-only zeroizing byte buffers (issue #40), used by the app's FFI-backed
+  # onboarding crypto to wipe key material after wrapping.
+  PildoraSecureMemory:
+    path: ../secure-memory/PildoraSecureMemory
 
 targets:
   Pildora:
@@ -55,6 +64,10 @@ targets:
         product: PildoraDrugIndexLoader
       - package: PildoraDesignSystem
         product: PildoraDesignSystem
+      - package: PildoraOnboarding
+        product: PildoraOnboarding
+      - package: PildoraSecureMemory
+        product: PildoraSecureMemory
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kafkade.pildora
