@@ -12,6 +12,10 @@ let package = Package(
             name: "PildoraDrugIndex",
             targets: ["PildoraDrugIndex"]
         ),
+        .executable(
+            name: "pildora-core-index-tool",
+            targets: ["pildora-core-index-tool"]
+        ),
     ],
     dependencies: [
         // GRDB provides the SQLite integration used to read the bundled,
@@ -26,6 +30,11 @@ let package = Package(
                 .product(name: "GRDB", package: "GRDB.swift"),
             ],
             path: "Sources/PildoraDrugIndex"
+        ),
+        .executableTarget(
+            name: "pildora-core-index-tool",
+            dependencies: ["PildoraDrugIndex"],
+            path: "Sources/pildora-core-index-tool"
         ),
         .testTarget(
             name: "PildoraDrugIndexTests",

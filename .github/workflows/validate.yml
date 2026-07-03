@@ -103,6 +103,7 @@ jobs:
             ios/design-system/PildoraDesignSystem \
             ios/data-layer/PildoraDataLayer \
             ios/drug-index/PildoraDrugIndex \
+            ios/drug-index-loader/PildoraDrugIndexLoader \
             ios/today-view/PildoraTodayView \
             ios/notification-scheduler/PildoraNotificationScheduler \
             ios/medication-list/PildoraMedicationList; do

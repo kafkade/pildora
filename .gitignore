@@ -58,6 +58,10 @@ target/
 # UniFFI generated bindings (produced by build-xcframework.sh)
 ios/ffi-spike/generated/
 
+# Generated bundled core drug index (produced from core-seed.json at build time
+# by Scripts/generate-core-index.sh — the seed JSON is the committed source).
+ios/app/Pildora/Resources/core-index.db
+
 # watchOS FFI spike artifacts (issue #42)
 # The generated bindings are staged into the library target by run-watchos-tests.sh
 ios/watchos-ffi-spike/PildoraCryptoWatchSpike/Sources/PildoraCryptoWatchKit/pildora_crypto_ffi.swift

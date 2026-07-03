@@ -1,3 +1,4 @@
+import PildoraDrugIndexLoader
 import PildoraMedicationList
 import SwiftUI
 
@@ -9,7 +10,7 @@ struct ContentView: View {
 
     enum Phase {
         case loading
-        case ready(MedicationStore)
+        case ready(MedicationStore, TieredDrugIndexProvider)
         case failed(String)
     }
 
@@ -18,8 +19,8 @@ struct ContentView: View {
         case .loading:
             ProgressView("Preparing your vault…")
                 .task { await bootstrap() }
-        case .ready(let store):
-            MainTabView(store: store)
+        case .ready(let store, let drugIndex):
+            MainTabView(store: store, drugIndex: drugIndex)
         case .failed(let message):
             failureView(message)
         }
@@ -41,28 +42,38 @@ struct ContentView: View {
     private func bootstrap() async {
         guard case .loading = phase else { return }
         do {
-            phase = .ready(try AppBootstrap.makeStore())
+            let bootstrapped = try AppBootstrap.bootstrap()
+            // Non-blocking: kick off the one-time full-index download. Any
+            // failure is reflected in the provider's state and leaves the
+            // bundled core index serving autocomplete.
+            bootstrapped.drugIndex.startFullIndexDownloadIfNeeded()
+            phase = .ready(bootstrapped.store, bootstrapped.drugIndex)
         } catch {
             phase = .failed(String(describing: error))
         }
     }
 }
 
-/// Two-tab shell: the medication tracker and the developer diagnostics screen.
+/// Two-tab shell: the medication tracker and the developer diagnostics screen,
+/// with a drug-index update banner across the top.
 struct MainTabView: View {
     let store: MedicationStore
+    @ObservedObject var drugIndex: TieredDrugIndexProvider
 
     var body: some View {
-        TabView {
-            MedicationListView(store: store)
-                .tabItem { Label("Medications", systemImage: "pills") }
+        VStack(spacing: 0) {
+            DrugIndexStatusView(provider: drugIndex)
+            TabView {
+                MedicationListView(store: store)
+                    .tabItem { Label("Medications", systemImage: "pills") }
 
-            DiagnosticsView()
-                .tabItem { Label("Diagnostics", systemImage: "lock.shield") }
+                DiagnosticsView(drugIndex: drugIndex)
+                    .tabItem { Label("Diagnostics", systemImage: "lock.shield") }
+            }
         }
     }
 }
 
 #Preview {
-    MainTabView(store: .sample())
+    MainTabView(store: .sample(), drugIndex: try! PreviewSupport.makeDrugIndexProvider())
 }

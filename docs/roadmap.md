@@ -256,6 +256,7 @@ Implement a **time-delayed emergency access** model (similar to Bitwarden):
 | Email address | Operator, email provider | Medium | Offer anonymous sign-up with recovery key only (no email); make email optional |
 | Push notification timing | Apple (APNs) | Medium | Use **local notifications only** for MVP; if server push is added, use opaque periodic timers (fire every 15 min, client decides if a dose is due) |
 | Drug autocomplete queries | Nobody (local index) | None | **Bundled local drug index** — no server queries for drug search |
+| Full drug-index download (first launch) | CDN operator, ISP | Low | **Tiered loading (issue #68):** a one-time anonymous GET of a single *static, public* index file, identical for every user. Exposes only client IP, request timing (that the app fetched the public drug DB once), TLS SNI hostname, and the fixed blob size — **no health data, no query text, no per-user URL, no auth/cookies.** Core index is bundled so the app is fully functional before/without this download. CDN-frontable; version-only cache-busting. |
 | Encrypted blob sizes | Operator (sync server) | Low | Pad encrypted blobs to fixed size buckets (512B, 2KB, 8KB, 32KB) to prevent inference |
 | IP addresses | Operator, ISP | Medium | Minimize server logs (retain 24h max); document Tor/VPN compatibility; no IP-based analytics |
 | Sync timing patterns | Operator | Low | Batch sync on a timer (every 15 min) rather than on each action — prevents real-time behavioral inference |
@@ -360,7 +361,7 @@ The following are explicitly **out of scope** and will not be built:
 
 **Full feature:** Add prescriber, pharmacy, reason/condition, start/end dates, refill info, photo of pill/bottle (stored encrypted), barcode scanning.
 
-**E2E implementation:** Autocomplete uses a **locally bundled drug index** (compressed openFDA + RxNorm data, ~80-120MB on disk). The index is shipped with the app and updated via app updates or a background delta-download. **No server queries for drug search — this is the recommended approach.**
+**E2E implementation:** Autocomplete uses a **locally bundled drug index** (compressed openFDA + RxNorm data, ~80-120MB on disk). A compact **core index is bundled** in the app so search works fully offline from first launch; the **full index is downloaded once from a public CDN** and verified (SHA-256 + version + schema checks) with graceful fallback to core on any failure — see the tiered-loading loader (`ios/drug-index-loader/PildoraDrugIndexLoader`, issue #68). **No server queries for drug search — this is the recommended approach.** The download is an anonymous GET of a single static public file (see Metadata Exposure Matrix §2.5): no query text or health data ever leaves the device.
 
 - Rejected: Server-side search (leaks medication interest), k-anonymity batch queries (complex, partial privacy)
 

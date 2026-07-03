@@ -38,6 +38,33 @@ python -m pildora_data.cli
 | `--output-db` | `<output-dir>/pildora_drugs.sqlite` | Path for the SQLite index |
 | `--skip-rxnorm` | off | Skip RxNorm API lookups during index build |
 | `--compress` | off | Compress the index with gzip after building |
+| `--tiered` | off | Build a **core** (compact, bundled) + **full** index split |
+| `--core-limit` | `500` | Number of top drug concepts (by product count) kept in the core index |
+| `--index-version` | today (`YYYY.MM.DD`) | Dataset version stamp written to `metadata` and the manifest |
+| `--manifest` | off | Emit `manifest.json` with artifact hashes/sizes (implies `--tiered --compress`) |
+
+## Tiered Index (core + full)
+
+The iOS app ships a compact **core** index inside the app bundle and downloads
+the **full** index on first launch (issue #68). Build both plus a manifest:
+
+```bash
+pildora-etl --index --manifest              # core + full + gzip + manifest.json
+pildora-etl --index --tiered --core-limit 800   # custom core size, no manifest
+```
+
+Tiered output (in `output/`):
+
+- **`pildora_drugs_full.sqlite`(`.gz`)** — full index (target `< 150MB`), downloaded on first launch
+- **`pildora_drugs_core.sqlite`(`.gz`)** — compact core (top-N common drugs + all supplements), bundled in the app
+- **`manifest.json`** — the ETL↔app contract: `index_version`, per-tier `sha256`/`size_bytes` for the compressed `.gz` and the decompressed `.sqlite`
+
+The **core** is a strict subset of the **full** index (same schema, same rows for
+the drugs it contains), selected by NDC/product prevalence. Both tiers share one
+`index_version` so the app can detect when a newer full index is available and
+download it without an app update. The app verifies the compressed hash, gunzips,
+then verifies the uncompressed hash before atomically installing the full index;
+any failure leaves the bundled core in place (graceful offline fallback).
 
 ## Data Sources
 
@@ -57,6 +84,8 @@ The pipeline produces JSONL files (one JSON object per line):
 - **`output/quality_report.txt`** — Coverage and quality statistics
 - **`output/pildora_drugs.sqlite`** — SQLite FTS5 search index (with `--index`)
 - **`output/pildora_drugs.sqlite.gz`** — Compressed index (with `--compress`)
+- **`output/pildora_drugs_{core,full}.sqlite`(`.gz`)** — Tiered indexes (with `--tiered`)
+- **`output/manifest.json`** — Tiered distribution manifest (with `--manifest`)
 
 ## Search Index
 
@@ -173,7 +202,8 @@ data/
 │       ├── cli.py            — CLI entry point
 │       ├── compress.py       — Gzip compression for distribution
 │       ├── download.py       — Data source downloaders
-│       ├── index_builder.py  — SQLite FTS5 index builder
+│       ├── index_builder.py  — SQLite FTS5 index builder (+ core/full split)
+│       ├── manifest.py       — Tiered distribution manifest (hashes/sizes)
 │       ├── models.py         — DrugProduct & Supplement dataclasses
 │       ├── output.py         — JSONL writer & quality report
 │       ├── rxnorm.py         — RxNorm REST API client
@@ -189,6 +219,7 @@ data/
 │   ├── test_models.py
 │   ├── test_openfda.py
 │   ├── test_output.py
-│   └── test_search.py
+│   ├── test_search.py
+│   └── test_tiered.py       — core/full split + manifest
 └── output/                   — Generated output (gitignored)
 ```
